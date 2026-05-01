@@ -1,4 +1,4 @@
-namespace Platformm
+namespace Platform
 {
     public class WeatherForecast
     {
