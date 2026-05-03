@@ -35,6 +35,10 @@ namespace Platform.Models
         public event EventHandler<StudentResponse>? OnSubmitted;
         public event EventHandler<StudentResponse>? OnGradeApplied;
 
+        protected StudentResponse()
+        {
+        }
+
         public StudentResponse(Student author, Task targetTask)
         {
             Author = author ?? throw new ArgumentNullException(nameof(author));

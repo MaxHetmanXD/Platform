@@ -20,6 +20,10 @@ namespace Platform.Models
 
         public DateTime UploadDate { get; private set; }
 
+        protected FileModel()
+        {
+        }
+
         public FileModel(string fileName, long sizeInBytes, User uploader)
         {
             if (string.IsNullOrWhiteSpace(fileName))

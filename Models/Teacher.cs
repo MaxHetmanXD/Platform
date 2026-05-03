@@ -12,6 +12,7 @@ namespace Platform.Models
         public string Position { get; private set; }
 
         public List<Course> OwnCourses { get; set; } = new List<Course>();
+        protected Teacher() { }
 
         public Teacher(string login, string password, string nickname, string email, string position)
             : base(login, password, nickname, email, UserRole.Teacher)

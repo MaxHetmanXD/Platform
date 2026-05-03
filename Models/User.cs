@@ -14,6 +14,7 @@ namespace Platform.Models
         public string Password { get; set; }
         public string Nickname { get; set; }
         public string Email { get; set; }
+        public Guid? AvatarId { get; set; }
         public FileModel? Avatar { get; set; }
         public string Info { get; set; }
         public UserRole Role { get; set; }
@@ -22,6 +23,8 @@ namespace Platform.Models
         public bool IsActive { get; set; } = true;
 
         public event EventHandler<string>? OnProfileUpdated;
+
+        protected User() { }
 
         public User(string login, string password, string nickname, string email, UserRole role)
         {
