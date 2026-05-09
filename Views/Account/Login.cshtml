@@ -1,0 +1,114 @@
+﻿@model Platform.Models.ViewModels.LoginViewModel
+
+@{
+    ViewData["Title"] = "Вхід в акаунт";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+            body {
+                background-color: #f8f9fa;
+            }
+        
+            .login-wrapper {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            .google-card {
+                border-radius: 8px;
+                border: 1px solid #dadce0;
+                background-color: #fff;
+                padding: 40px !important;
+            }
+        
+            .google-title {
+                font-family: 'Google Sans', Roboto, Arial, sans-serif;
+                font-weight: 400;
+                color: #202124;
+            }
+        
+            .google-input {
+                border-radius: 4px;
+                border: 1px solid #dadce0;
+                padding: 13px 15px;
+            }
+        
+                .google-input:focus {
+                    border-color: #1a73e8;
+                    box-shadow: inset 0 0 0 1px #1a73e8;
+                    outline: none;
+                }
+        
+            .google-btn {
+                background-color: #1a73e8;
+                color: white;
+                font-weight: 500;
+                border-radius: 4px;
+                padding: 10px 24px;
+                border: none;
+                width: 100%;
+                transition: background-color 0.2s;
+            }
+        
+                .google-btn:hover {
+                    background-color: #1b66c9;
+                    color: white;
+                }
+        
+            .form-spacing {
+                margin-bottom: 25px;
+            }
+    </style>
+</head>
+<body>
+
+    <div class="login-wrapper">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 col-md-8 col-lg-4">
+                    
+                    <div class="google-card shadow-sm text-center">
+                        
+                        <div class="mb-4">
+                            <h2 class="google-title h4 mb-2">Вхід</h2>
+                            <p class="text-muted">Продовжити у Platform</p>
+                        </div>
+
+                        <form asp-action="Login" method="post" class="text-start">
+                            <div asp-validation-summary="ModelOnly" class="text-danger mb-3 small text-center"></div>
+
+                            <div class="form-spacing">
+                                <input asp-for="Login" class="form-control google-input" placeholder="Логін" />
+                                <span asp-validation-for="Login" class="text-danger small"></span>
+                            </div>
+
+                            <div class="form-spacing">
+                                <input asp-for="Password" type="password" class="form-control google-input" placeholder="Пароль" />
+                                <span asp-validation-for="Password" class="text-danger small"></span>
+                            </div>
+
+                            <div class="mt-4">
+                                <button type="submit" class="google-btn">Увійти</button>
+                            </div>
+                        </form>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>

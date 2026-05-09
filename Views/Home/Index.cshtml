@@ -1,0 +1,211 @@
+﻿@model IEnumerable<Platform.Models.ViewModels.CourseCardViewModel>
+
+@{
+    ViewData["Title"] = "Каталог курсів";
+    Layout = null;
+}
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Platform</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <style>
+        body { background-color: #f8f9fa; color: #202124; font-family: 'Google Sans', Roboto, sans-serif; }
+        
+        .google-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #dadce0;
+            padding: 10px 24px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+        .global-search {
+            max-width: 600px;
+            width: 100%;
+            background-color: #f1f3f4;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+        }
+        .global-search:focus { background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); outline: none; }
+        
+        .sidebar-menu a {
+            display: block;
+            padding: 12px 24px;
+            color: #3c4043;
+            text-decoration: none;
+            border-radius: 0 24px 24px 0;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+        .sidebar-menu a:hover { background-color: #f1f3f4; }
+        .sidebar-menu a.active { background-color: #e8f0fe; color: #1a73e8; }
+
+        .course-card {
+            border: 1px solid #dadce0;
+            border-radius: 8px;
+            background: #fff;
+            overflow: hidden;
+            transition: box-shadow 0.2s;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        .course-card:hover { box-shadow: 0 4px 6px rgba(0,0,0,0.1); cursor: pointer; }
+        .course-banner {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            background-color: #1a73e8;
+        }
+        .course-content { padding: 16px; flex-grow: 1; }
+        .course-title { font-size: 1.1rem; font-weight: 500; margin-bottom: 8px; }
+        .course-badge { font-size: 0.75rem; background-color: #e8eaed; padding: 4px 8px; border-radius: 4px; color: #5f6368; }
+        .course-footer {
+            padding: 12px 16px;
+            border-top: 1px solid #dadce0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.85rem;
+            color: #5f6368;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="google-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center" style="width: 200px;">
+            <i class="bi bi-book text-primary fs-3 me-2"></i>
+            <span class="fs-5 fw-bold text-secondary">Platform</span>
+        </div>
+
+        <div class="flex-grow-1 d-flex justify-content-center px-4">
+            <input type="text" class="global-search" placeholder="Глобальний пошук по платформі...">
+        </div>
+
+        <div class="d-flex align-items-center justify-content-end" style="width: 200px;">
+            @if (User.Identity!.IsAuthenticated)
+            {
+                <a href="#" class="btn btn-light rounded-circle p-2 me-3 position-relative" title="Повідомлення">
+                    <i class="bi bi-bell fs-5 text-secondary"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                </a>
+                
+                <a href="#" class="btn btn-outline-primary rounded-pill px-4">Профіль</a>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="btn btn-primary rounded-pill px-4">Увійти</a>
+            }
+        </div>
+    </header>
+
+    <div class="container-fluid mt-4">
+        
+        <nav aria-label="breadcrumb" class="ms-3 mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="#" class="text-decoration-none">Головна</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Каталог відкритих курсів</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <div class="col-md-3">
+                <nav class="sidebar-menu pe-3">
+                    <a href="#" class="active"><i class="bi bi-grid me-3"></i>Каталог курсів</a>
+
+                    @if (!User.IsInRole("Admin"))
+                    {
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <a href="#"><i class="bi bi-journal-bookmark me-3"></i>Мої курси</a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login"><i class="bi bi-journal-bookmark me-3"></i>Мої курси</a>
+                        }
+                    }
+
+                    @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                    {
+                        <a href="#" class="text-danger mt-4 border-top pt-3"><i class="bi bi-shield-lock me-3"></i>Для адмінів</a>
+                    }
+                </nav>
+            </div>
+
+            <div class="col-md-9">
+                
+                <form asp-action="Index" method="get" class="row g-3 mb-4 align-items-center">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
+                            <input type="text" name="searchString" class="form-control border-start-0" placeholder="Пошук курсу за назвою..." value="@ViewData["CurrentSearch"]">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <select name="sortOrder" class="form-select" onchange="this.form.submit()">
+                            <option value="">Сортувати за алфавітом</option>
+                            <option value="category" selected="@(ViewData["CurrentSort"]?.ToString() == "category")">Групувати за типом</option>
+                            <option value="popularity" selected="@(ViewData["CurrentSort"]?.ToString() == "popularity")">За кількістю студентів</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-outline-secondary w-100">Шукати</button>
+                    </div>
+                </form>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 pb-5">
+                    
+                    @if (!Model.Any())
+                    {
+                        <div class="col-12 text-center text-muted mt-5">
+                            <i class="bi bi-inbox fs-1"></i>
+                            <p class="mt-2">Відкритих курсів за вашим запитом не знайдено.</p>
+                        </div>
+                    }
+
+                    @foreach (var course in Model)
+                    {
+                        <div class="col">
+                            <div class="course-card">
+                                
+                                @if (course.BannerId != null)
+                                {
+                                    <img class="course-banner" src="/Files/Download?id=@course.BannerId" alt="Банер">
+                                }
+                                else
+                                {
+                                    <img class="course-banner" src="https://www.gstatic.com/classroom/themes/img_read.jpg" alt="Банер за замовчуванням">
+                                }
+                                
+                                <div class="course-content">
+                                    <h3 class="course-title" title="@course.Title">@course.Title</h3>
+                                    <span class="course-badge">@course.CategoryName</span>
+                                </div>
+                                
+                                <div class="course-footer">
+                                    <span title="Кількість студентів"><i class="bi bi-people-fill me-1 text-primary"></i> @course.StudentsCount</span>
+                                    <span class="text-truncate ms-2" title="Власник: @course.OwnerNickname">
+                                        <i class="bi bi-person-circle me-1"></i> @course.OwnerNickname
+                                    </span>
+                                </div>
+                                
+                            </div>
+                        </div>
+                    }
+
+                </div>
+            </div>
+        </div>
+    </div>
+
+</body>
+</html>
