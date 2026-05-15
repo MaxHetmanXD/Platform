@@ -39,7 +39,7 @@ namespace Platform.Data
 
             modelBuilder.Entity<Teacher>()
                 .HasMany(t => t.OwnCourses)
-                .WithOne()
+                .WithOne(c => c.Owner)
                 .HasForeignKey(c => c.OwnerId)
                 .OnDelete(DeleteBehavior.Restrict);
 

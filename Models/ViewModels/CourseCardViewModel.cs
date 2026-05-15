@@ -10,5 +10,7 @@ namespace Platform.Models.ViewModels
         public string OwnerNickname { get; set; }
         public int StudentsCount { get; set; }
         public Guid? BannerId { get; set; }
+        public double? AverageGrade { get; set; }
+        public bool IsTeacherView { get; set; }
     }
 }

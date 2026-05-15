@@ -1,0 +1,133 @@
+﻿@using Platform.Enums
+@model Platform.Models.ViewModels.CourseManagementViewModel
+@{ ViewData["Title"] = "Управління курсом"; Layout = null; }
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" /> <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; color: #202124; font-family: 'Google Sans', sans-serif; }
+        .google-header { background-color: #ffffff; border-bottom: 1px solid #dadce0; padding: 10px 24px; position: sticky; top: 0; z-index: 1000; }
+        .sidebar-menu a { display: block; padding: 12px 24px; color: #3c4043; text-decoration: none; border-radius: 0 24px 24px 0; font-weight: 500; margin-bottom: 4px; }
+        .sidebar-menu a:hover { background-color: #f1f3f4; }
+        .sidebar-menu a.active { background-color: #e8f0fe; color: #1a73e8; }
+        .manage-card { background: #fff; border: 1px solid #dadce0; border-radius: 8px; padding: 24px; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    </style>
+</head>
+<body>
+    <header class="google-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center" style="width: 200px;">
+            <i class="bi bi-book text-primary fs-3 me-2"></i><span class="fs-5 fw-bold text-secondary">Platform</span>
+        </div>
+        <div class="d-flex align-items-center justify-content-end" style="width: 200px;">
+            <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-primary rounded-pill px-4">Профіль</a>
+        </div>
+    </header>
+
+    <div class="container-fluid mt-4">
+        
+        <nav style="--bs-breadcrumb-divider: '/';" aria-label="breadcrumb" class="ms-3 mb-4">
+            <ol class="breadcrumb fs-5">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="MyCourses" class="text-decoration-none">Мої курси</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Управління курсом</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <div class="col-md-3">
+                <nav class="sidebar-menu pe-3">
+                    <a asp-controller="Home" asp-action="Index"><i class="bi bi-grid me-3"></i>Каталог курсів</a>
+                    <a asp-controller="Home" asp-action="MyCourses"><i class="bi bi-journal-bookmark me-3"></i>Мої курси</a>
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Admin" asp-action="Index" class="text-danger border-top mt-3 pt-3"><i class="bi bi-shield-lock me-3"></i>Для адмінів</a>
+                    }
+                </nav>
+            </div>
+
+            <div class="col-md-9 pb-5">
+                @if (TempData["Message"] != null)
+                {
+                    <div class="alert alert-success"><i class="bi bi-check-circle"></i> @TempData["Message"]</div>
+                }
+
+                <div class="manage-card">
+                    <form asp-action="Manage" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="Id" value="@Model.Id" />
+                        
+                        <div class="row">
+                            <div class="col-md-5 border-end pe-4">
+                                <h6 class="text-muted mb-3"><i class="bi bi-image"></i> Банер курсу</h6>
+                                @if (Model.BannerId != null)
+                                {
+                                    <img src="/Files/Download?id=@Model.BannerId" class="img-fluid rounded mb-3" style="width: 100%; height: 180px; object-fit: cover;" />
+                                }
+                                else
+                                {
+                                    <div class="bg-secondary rounded mb-3 d-flex align-items-center justify-content-center text-white" style="height: 180px;">Без банера</div>
+                                }
+                                <input type="file" name="bannerFile" class="form-control mb-4" accept="image/*" />
+
+                                <h6 class="text-muted mb-3"><i class="bi bi-shield-lock"></i> Налаштування доступу</h6>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Пароль (залиште порожнім, якщо курс публічний)</label>
+                                    <input type="text" asp-for="Pass" id="coursePassword" class="form-control" placeholder="Введіть пароль..." />
+                                </div>
+                                
+                                <div class="form-check form-switch mb-4">
+                                    <input class="form-check-input" type="checkbox" id="isPrivateToggle" @(!Model.IsPublic ? "checked" : "") disabled>
+                                    <label class="form-check-label" for="isPrivateToggle">Приватний курс (тільки за паролем)</label>
+                                </div>
+
+                                <div class="mb-3">
+                                    <label class="form-label">Категорія курсу</label>
+                                    <select asp-for="Category" asp-items="Html.GetEnumSelectList<CourseCategory>()" class="form-select"></select>
+                                </div>
+                            </div>
+
+                            <div class="col-md-7 ps-4">
+                                <h6 class="text-muted mb-3"><i class="bi bi-card-text"></i> Основна інформація</h6>
+                                <div class="mb-3">
+                                    <label class="form-label fw-bold">Назва курсу</label>
+                                    <input type="text" asp-for="Title" class="form-control form-control-lg" required />
+                                </div>
+                                <div class="mb-4">
+                                    <label class="form-label fw-bold">Опис курсу</label>
+                                    <textarea asp-for="Description" class="form-control" rows="8" required></textarea>
+                                </div>
+                                
+                                <div class="d-flex justify-content-end gap-2 mt-5 border-top pt-3">
+                                    <button type="submit" class="btn btn-primary px-4 fw-bold">Зберегти зміни</button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                    
+                    <div class="d-flex justify-content-end mt-2">
+                        <form asp-action="Delete" method="post" onsubmit="return confirm('Ви впевнені, що хочете ВИДАЛИТИ цей курс з усіма уроками та завданнями?');">
+                            <input type="hidden" name="id" value="@Model.Id" />
+                            <button type="submit" class="btn btn-outline-danger">Видалити курс</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('coursePassword').addEventListener('input', function() {
+            var toggle = document.getElementById('isPrivateToggle');
+            if (this.value.trim().length > 0) {
+                toggle.checked = true;
+            } else {
+                toggle.checked = false;
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,111 @@
+﻿@model IEnumerable<Platform.Models.ViewModels.CourseCardViewModel>
+@{ ViewData["Title"] = "Адмін - Курси"; Layout = null; }
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" /> <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; color: #202124; font-family: 'Google Sans', sans-serif; }
+        .google-header { background-color: #ffffff; border-bottom: 1px solid #dadce0; padding: 10px 24px; position: sticky; top: 0; z-index: 1000; }
+        .sidebar-menu a { display: block; padding: 12px 24px; color: #3c4043; text-decoration: none; border-radius: 0 24px 24px 0; font-weight: 500; margin-bottom: 4px; }
+        .sidebar-menu a:hover { background-color: #f1f3f4; }
+        .sidebar-menu a.active { background-color: #e8f0fe; color: #1a73e8; }
+        .admin-tab { padding: 10px 20px; border-bottom: 3px solid transparent; color: #5f6368; text-decoration: none; font-weight: 500; }
+        .admin-tab.active { border-bottom-color: #1a73e8; color: #1a73e8; }
+        .admin-tab:hover { background-color: #f1f3f4; }
+        .course-card { border: 1px solid #dadce0; border-radius: 8px; background: #fff; height: 100%; display: flex; flex-direction: column; overflow: hidden;}
+        .course-banner { width: 100%; height: 120px; object-fit: cover; background-color: #1a73e8; }
+        .course-content { padding: 16px; flex-grow: 1; }
+        .course-footer { padding: 12px 16px; border-top: 1px solid #dadce0; font-size: 0.85rem; color: #5f6368; }
+    </style>
+</head>
+<body>
+    <header class="google-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center" style="width: 200px;">
+            <i class="bi bi-book text-primary fs-3 me-2"></i><span class="fs-5 fw-bold text-secondary">Platform</span>
+        </div>
+        <div class="d-flex align-items-center justify-content-end" style="width: 200px;">
+            <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-primary rounded-pill px-4">Профіль</a>
+        </div>
+    </header>
+
+    <div class="container-fluid mt-4">
+        <div class="row">
+            <div class="col-md-3">
+                <nav class="sidebar-menu pe-3">
+                    <a asp-controller="Home" asp-action="Index"><i class="bi bi-grid me-3"></i>Каталог курсів</a>
+                    <a asp-controller="Admin" asp-action="Index" class="active text-danger border-top mt-3 pt-3"><i class="bi bi-shield-lock me-3"></i>Для адмінів</a>
+                </nav>
+            </div>
+
+            <div class="col-md-9">
+                <div class="d-flex border-bottom mb-4">
+                    <a asp-action="Courses" class="admin-tab active">Всі Курси</a>
+                    <a asp-action="Users" class="admin-tab">Користувачі</a>
+                    <a href="#" class="admin-tab ms-auto text-success" data-bs-toggle="modal" data-bs-target="#createUserModal"><i class="bi bi-person-plus-fill me-1"></i> Створити користувача</a>
+                </div>
+
+                <form asp-action="Courses" method="get" class="row g-3 mb-4">
+                    <div class="col-md-6">
+                        <input type="text" name="searchString" class="form-control" placeholder="Пошук курсів..." value="@ViewData["CurrentSearch"]">
+                    </div>
+                    <div class="col-md-4">
+                        <select name="sortOrder" class="form-select" onchange="this.form.submit()">
+                            <option value="">За алфавітом</option>
+                            <option value="popularity" selected="@(ViewData["CurrentSort"]?.ToString() == "popularity")">За популярністю</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-outline-secondary w-100">Шукати</button>
+                    </div>
+                </form>
+
+                <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 pb-5">
+                    @foreach (var course in Model)
+                    {
+                        <div class="col">
+                            <a href="#" class="text-decoration-none text-dark">
+                                <div class="course-card shadow-sm">
+                                    <img class="course-banner" src="@(course.BannerId != null ? $"/Files/Download?id={course.BannerId}" : "https://www.gstatic.com/classroom/themes/img_read.jpg")" alt="Банер">
+                                    <div class="course-content">
+                                        <h5 class="mb-1 text-truncate">@course.Title</h5>
+                                        <span class="badge bg-light text-dark border">@course.CategoryName</span>
+                                    </div>
+                                    <div class="course-footer d-flex justify-content-between">
+                                        <span><i class="bi bi-people-fill text-primary"></i> @course.StudentsCount</span>
+                                        <span><i class="bi bi-person-circle"></i> @course.OwnerNickname</span>
+                                    </div>
+                                </div>
+                            </a>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="createUserModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <form asp-action="CreateUser" method="post">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Створити користувача</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body text-center">
+                        <p class="small text-muted">Оберіть роль для нового профілю. Логін та пароль згенеруються автоматично, ви зможете змінити їх на сторінці редагування.</p>
+                        <button type="submit" name="roleType" value="Teacher" class="btn btn-outline-primary w-100 mb-2"><i class="bi bi-person-video3"></i> Вчитель</button>
+                        <button type="submit" name="roleType" value="Student" class="btn btn-outline-success w-100"><i class="bi bi-mortarboard"></i> Студент</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -7,6 +7,25 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<PlatformDbContext>();
 
+builder.Services.AddSingleton<Platform.Models.PlatformData>();
+
+builder.Services.AddScoped<Platform.Services.FileManager>(provider =>
+{
+    var platformData = provider.GetRequiredService<Platform.Models.PlatformData>();
+    var env = provider.GetRequiredService<IWebHostEnvironment>();
+
+    // Вказуємо папку wwwroot/uploads для зберігання картинок
+    string uploadPath = Path.Combine(env.WebRootPath ?? env.ContentRootPath, "uploads");
+
+    // Дозволяємо картинки до 5 Мегабайт
+    return new Platform.Services.FileManager(
+        uploadPath,
+        new List<string> { ".jpg", ".jpeg", ".png", ".webp", ".gif" },
+        5 * 1024 * 1024,
+        platformData
+    );
+});
+
 builder.Services.AddOpenApi();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)

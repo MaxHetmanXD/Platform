@@ -8,7 +8,7 @@ namespace Platform.Models
 {
     public class Student : User
     {
-        public string Group { get; private set; }
+        public string Group { get; set; }
 
         public List<Course> EnrolledCourses { get; set; } = new List<Course>();
 

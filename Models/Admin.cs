@@ -15,10 +15,6 @@ namespace Platform.Models
 
         public User CreateUser(string login, string password, string nickname, string email, UserRole role)
         {
-            if (role == UserRole.Admin)
-            {
-                return new Admin(login, password, nickname, email);
-            }
             if (role == UserRole.Student)
             {
                 return new Student(login, password, email, nickname, "Нерозподілені");
@@ -172,6 +168,11 @@ namespace Platform.Models
             {
                 throw new ArgumentException("Об'єкт доступу має бути Уроком або Завданням.");
             }
+        }
+        public void DeleteCourse(Course course)
+        {
+            if (course == null) throw new ArgumentNullException(nameof(course));
+
         }
     }
 }

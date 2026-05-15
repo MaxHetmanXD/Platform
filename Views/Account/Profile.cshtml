@@ -1,0 +1,253 @@
+﻿@model Platform.Models.ViewModels.UserProfileViewModel
+
+@{
+    ViewData["Title"] = "Профіль користувача";
+    Layout = null; 
+}
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+
+    <style>
+        body { background-color: #f8f9fa; color: #202124; font-family: 'Google Sans', sans-serif; }
+        .google-header { background-color: #ffffff; border-bottom: 1px solid #dadce0; padding: 10px 24px; position: sticky; top: 0; z-index: 1000; }
+        .sidebar-menu a { display: block; padding: 12px 24px; color: #3c4043; text-decoration: none; border-radius: 0 24px 24px 0; font-weight: 500; margin-bottom: 4px; }
+        .sidebar-menu a:hover { background-color: #f1f3f4; }
+        .sidebar-menu a.active { background-color: #e8f0fe; color: #1a73e8; }
+        .profile-card { border: 1px solid #dadce0; border-radius: 8px; background: #fff; }
+    </style>
+</head>
+<body>
+
+    <header class="google-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center" style="width: 200px;">
+            <i class="bi bi-book text-primary fs-3 me-2"></i>
+            <span class="fs-5 fw-bold text-secondary">Platform</span>
+        </div>
+
+        <div class="d-flex align-items-center justify-content-end" style="width: 200px;">
+            @if (User.Identity!.IsAuthenticated)
+            {
+                <a href="#" class="btn btn-light rounded-circle p-2 me-3 position-relative" title="Повідомлення">
+                    <i class="bi bi-bell fs-5 text-secondary"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                </a>
+                
+                <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-primary rounded-pill px-4">Профіль</a>
+            }
+            else
+            {
+                <a asp-controller="Account" asp-action="Login" class="btn btn-primary rounded-pill px-4">Увійти</a>
+            }
+        </div>
+    </header>
+
+    <div class="container-fluid mt-4">
+        
+        <nav style="--bs-breadcrumb-divider: '/';" aria-label="breadcrumb" class="ms-3 mb-4">
+            <ol class="breadcrumb fs-5">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-decoration-none">Головна</a></li>
+                <li class="breadcrumb-item active" aria-current="page">Профіль користувача</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <div class="col-md-3">
+                <nav class="sidebar-menu pe-3">
+                    <a asp-controller="Home" asp-action="Index" class="active"><i class="bi bi-grid me-3"></i>Каталог курсів</a>
+
+                    @if (!User.IsInRole("Admin"))
+                    {
+                        @if (User.Identity.IsAuthenticated)
+                        {
+                            <a asp-controller="Home" asp-action="MyCourses"><i class="bi bi-journal-bookmark me-3"></i>Мої курси</a>
+                        }
+                        else
+                        {
+                            <a asp-controller="Account" asp-action="Login"><i class="bi bi-journal-bookmark me-3"></i>Мої курси</a>
+                        }
+                    }
+
+                    @if (User.Identity.IsAuthenticated && User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Admin" asp-action="Index"><i class="bi bi-shield-lock me-3"></i>Для адмінів</a>
+                    }
+                </nav>
+            </div>
+
+            <div class="col-md-9">
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger mb-4">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+                    </div>
+                }
+                @if (TempData["Message"] != null)
+                {
+                    <div class="alert alert-success mb-4">
+                        <i class="bi bi-check-circle-fill me-2"></i> @TempData["Message"]
+                    </div>
+                }
+                <div class="profile-card p-4 shadow-sm mb-5">
+                    <div class="row">
+                        <div class="col-md-3 text-center border-end">
+                            @if (Model.AvatarId != null)
+                            {
+                                <img src="/Files/Download?id=@Model.AvatarId" class="rounded-circle mb-3" style="width: 120px; height: 120px; object-fit: cover;" />
+                            }
+                            else
+                            {
+                                <div class="bg-secondary rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 120px; height: 120px;">
+                                    <i class="bi bi-person text-white" style="font-size: 4rem;"></i>
+                                </div>
+                            }
+                            <div class="text-muted small">
+                                Останній вхід:<br/>
+                                <strong>@Model.LastLogin.ToString("dd.MM.yyyy HH:mm")</strong>
+                            </div>
+                        </div>
+
+                        <div class="col-md-4 border-end px-4">
+                            <h4 class="mb-3">@Model.Nickname</h4>
+                            <p class="mb-2 text-muted"><i class="bi bi-person-badge"></i> Логін: <strong class="text-dark">@Model.Login</strong></p>
+                            <p class="mb-2 text-muted"><i class="bi bi-envelope"></i> Email: <strong class="text-dark">@Model.Email</strong></p>
+                            @if (Model.SpecialFieldLabel != null)
+                            {
+                                <p class="mb-2 text-muted"><i class="bi bi-briefcase"></i> @Model.SpecialFieldLabel: <strong class="text-dark">@Model.SpecialFieldValue</strong></p>
+                            }
+                            <p class="mb-0 mt-3"><span class="badge bg-primary fs-6">@Model.Role</span></p>
+                        </div>
+
+                        <div class="col-md-5 px-4">
+                            <h6 class="text-muted mb-3"><i class="bi bi-info-circle"></i> Про себе:</h6>
+                            <div class="p-3 bg-light rounded" style="min-height: 120px; border: 1px dashed #dadce0;">
+                                @(string.IsNullOrWhiteSpace(Model.Info) ? "Користувач не додав інформацію про себе." : Model.Info)
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-4 pt-3 border-top">
+                        <div class="col d-flex justify-content-end gap-2">
+                            @if (Model.IsOwnProfile || Model.IsAdmin)
+                            {
+                                <button class="btn btn-outline-warning fw-bold" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                                    <i class="bi bi-key"></i> Змінити пароль
+                                </button>
+                                <button class="btn btn-outline-primary fw-bold" data-bs-toggle="modal" data-bs-target="#editProfileModal">
+                                    <i class="bi bi-pencil-square"></i> Редагувати профіль
+                                </button>
+                            }
+                            
+                            @if (Model.IsOwnProfile)
+                            {
+                                <a asp-controller="Account" asp-action="Logout" class="btn btn-danger fw-bold ms-3">
+                                    <i class="bi bi-box-arrow-right"></i> Вийти
+                                </a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.IsOwnProfile || Model.IsAdmin)
+    {
+        <div class="modal fade" id="changePasswordModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form asp-controller="Account" asp-action="ChangePassword" method="post">
+                        <input type="hidden" name="userId" value="@Model.Id" />
+                        <div class="modal-header">
+                            <h5 class="modal-title">Зміна пароля</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            @if (Model.IsAdmin)
+                            {
+                                <div class="alert alert-danger">
+                                    <i class="bi bi-shield-lock"></i> Старий пароль користувача: <strong>@Model.CurrentPassword</strong>
+                                </div>
+                            }
+                            <div class="mb-3">
+                                <label class="form-label">Старий пароль</label>
+                                <input type="password" name="oldPassword" class="form-control" required />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Новий пароль (мінімум 8 символів)</label>
+                                <input type="password" name="newPassword" class="form-control" minlength="8" required />
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                            <button type="submit" class="btn btn-warning">Підтвердити</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="editProfileModal" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form asp-controller="Account" asp-action="EditProfile" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="userId" value="@Model.Id" />
+                        <div class="modal-header">
+                            <h5 class="modal-title">Редагування профілю</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Аватар (зображення)</label>
+                                <input type="file" name="avatarFile" class="form-control" accept="image/*" />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Нікнейм</label>
+                                <input type="text" name="nickname" class="form-control" value="@Model.Nickname" required />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Email</label>
+                                <input type="email" name="email" class="form-control" value="@Model.Email" required />
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Про себе</label>
+                                <textarea name="info" class="form-control" rows="3">@Model.Info</textarea>
+                            </div>
+                            
+                            @if (Model.IsAdmin)
+                            {
+                                <hr />
+                                <h6 class="text-danger"><i class="bi bi-tools"></i> Панель адміністратора</h6>
+                                <div class="mb-3">
+                                    <label class="form-label">Логін</label>
+                                    <input type="text" name="login" class="form-control" value="@Model.Login" />
+                                </div>
+                                @if (Model.SpecialFieldLabel != null)
+                                {
+                                    <div class="mb-3">
+                                        <label class="form-label">@Model.SpecialFieldLabel</label>
+                                        <input type="text" name="specialValue" class="form-control" value="@Model.SpecialFieldValue" />
+                                    </div>
+                                }
+                            }
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Скасувати</button>
+                            <button type="submit" class="btn btn-primary">Зберегти зміни</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

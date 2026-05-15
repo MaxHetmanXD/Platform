@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Platform.Models;
+using Microsoft.AspNetCore.Http;
+using System.Threading.Tasks;
 
 namespace Platform.Services
 {
@@ -29,6 +31,24 @@ namespace Platform.Services
             {
                 Directory.CreateDirectory(RootFolderPath);
             }
+        }
+        public async Task<FileModel> SaveFileAsync(IFormFile file, User uploader)
+        {
+            if (file == null || file.Length == 0) return null;
+
+            var fileModel = new FileModel(file.FileName, file.Length, uploader);
+
+            string storageName = fileModel.GenerateStorageName();
+            string fullPath = Path.Combine(RootFolderPath, storageName);
+
+            using (var stream = new FileStream(fullPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            fileModel.LocalPath = fullPath;
+
+            return fileModel;
         }
 
         public string SaveFile(FileModel metadata, byte[] content)

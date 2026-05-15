@@ -9,7 +9,7 @@ namespace Platform.Models
 {
     public class Teacher : User
     {
-        public string Position { get; private set; }
+        public string Position { get; set; }
 
         public List<Course> OwnCourses { get; set; } = new List<Course>();
         protected Teacher() { }
@@ -146,6 +146,15 @@ namespace Platform.Models
         public List<TaskStatusDTO> GetStudentDetails(Student student, Course course)
         {
             return student.GetTaskAnalytics(course);
+        }
+
+        public void DeleteCourse(Course course)
+        {
+            if (course.OwnerId != this.Id)
+            {
+                throw new UnauthorizedAccessException("Ви не є власником цього курсу.");
+            }
+            OwnCourses.Remove(course);
         }
     }
 }

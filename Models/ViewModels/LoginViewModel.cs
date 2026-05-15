@@ -4,10 +4,10 @@ namespace Platform.Models.ViewModels
 {
     public class LoginViewModel
     {
-        [Required(ErrorMessage = "Введіть логін")]
+        [Required(ErrorMessage = "Поле Логін є обов'язковим")]
         public string Login { get; set; }
 
-        [Required(ErrorMessage = "Введіть пароль")]
+        [Required(ErrorMessage = "Поле Пароль є обов'язковим")]
         [DataType(DataType.Password)]
         public string Password { get; set; }
     }

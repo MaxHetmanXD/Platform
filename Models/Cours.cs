@@ -12,7 +12,7 @@ namespace Platform.Models
         public Guid Id { get; private set; } = Guid.NewGuid();
 
         public Guid OwnerId { get; set; }
-
+        public virtual Teacher Owner { get; set; }
         public string Title { get; set; }
         public string Description { get; set; }
         public FileModel? Banner { get; set; }
