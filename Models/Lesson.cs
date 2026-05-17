@@ -61,12 +61,14 @@ namespace Platform.Models
 
         public List<Task> GetAccessibleTasks(Student student)
         {
-            if (!AllowedStudents.Contains(student))
+            if (!this.IsPublic && !this.AllowedStudents.Any(s => s.Id == student.Id))
             {
                 return new List<Task>();
             }
 
-            return Tasks.Where(t => t.AllowedStudents.Contains(student)).ToList();
+            return Tasks
+                .Where(t => t.IsVisible || t.AllowedStudents.Any(s => s.Id == student.Id))
+                .ToList();
         }
 
         public double CalculateAverage(Student student)

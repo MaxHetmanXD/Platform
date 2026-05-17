@@ -110,7 +110,12 @@
                                 <button type="submit" class="btn btn-outline-danger fw-bold"><i class="bi bi-trash"></i> Видалити</button>
                             </form>
 
-                            <a href="#" class="btn btn-success fw-bold ms-auto"><i class="bi bi-plus-lg"></i> Додати завдання</a> </div>
+                            <form asp-action="AutoCreateTask" method="post" class="ms-auto">
+                                <input type="hidden" name="lessonId" value="@Model.LessonId" />
+                                <button type="submit" class="btn btn-success fw-bold">
+                                <i class="bi bi-plus-lg"></i> Додати завдання
+                                </button>
+                            </form> </div>
                     }
                 </div>
             </div>

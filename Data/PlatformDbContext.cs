@@ -50,7 +50,8 @@ namespace Platform.Data
 
             modelBuilder.Entity<Lesson>()
                 .HasMany(l => l.Tasks)
-                .WithOne()
+                .WithOne(t => t.Lesson)
+                .HasForeignKey(t => t.LessonId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             modelBuilder.Entity<Lesson>()

@@ -31,7 +31,7 @@ namespace Platform.Models
 
         public SubmissionStatus Status { get; set; } = SubmissionStatus.Pending;
 
-        public Grade? FinalGrade { get; private set; }
+        public Grade? FinalGrade { get; set; }
         public event EventHandler<StudentResponse>? OnSubmitted;
         public event EventHandler<StudentResponse>? OnGradeApplied;
 

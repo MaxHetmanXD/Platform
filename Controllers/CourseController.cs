@@ -748,6 +748,90 @@ namespace Platform.Controllers
             return RedirectToAction("TaskDetails", new { id = newTask.Id });
         }
 
+        [Authorize(Roles = "Teacher,Admin")]
+        [HttpPost]
+        public async Task<IActionResult> EditTask(Guid taskId, string title, string info, int maxPoints, DateTime? deadline, bool isVisible, List<Guid> allowedStudentIds, List<IFormFile> newFiles, List<Guid> filesToRemove)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid.TryParse(userIdStr, out Guid userId);
+            var isAdmin = User.IsInRole("Admin");
+
+            var task = await _context.Tasks
+                .Include(t => t.Lesson).ThenInclude(l => l.Course).ThenInclude(c => c.Students)
+                .Include(t => t.Attachments)
+                .Include(t => t.AllowedStudents)
+                .FirstOrDefaultAsync(t => t.Id == taskId);
+
+            if (task == null) return NotFound();
+            if (task.Lesson.Course.OwnerId != userId && !isAdmin) return Forbid();
+
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+            if (filesToRemove != null && filesToRemove.Any())
+            {
+                var filesToDelete = task.Attachments.Where(f => filesToRemove.Contains(f.Id)).ToList();
+                foreach (var file in filesToDelete)
+                {
+                    task.Attachments.Remove(file);
+                    _context.Files.Remove(file);
+                }
+            }
+
+            if (newFiles != null && newFiles.Any())
+            {
+                foreach (var file in newFiles)
+                {
+                    var savedFile = await _fileManager.SaveFileAsync(file, currentUser!);
+                    if (savedFile != null)
+                    {
+                        task.Attachments.Add(savedFile);
+                        _context.Files.Add(savedFile);
+                    }
+                }
+            }
+
+            DateTime finalDeadline = deadline ?? DateTime.MaxValue;
+
+            if (isAdmin)
+                ((Admin)currentUser!).EditTask(task, title, info, maxPoints, finalDeadline, task.Attachments);
+            else
+                ((Teacher)currentUser!).EditTask(task, title, info, maxPoints, finalDeadline, task.Attachments);
+
+            task.IsVisible = isVisible;
+
+            task.AllowedStudents.Clear();
+            if (!isVisible && allowedStudentIds != null)
+            {
+                var selectedStudents = task.Lesson.Course.Students.Where(s => allowedStudentIds.Contains(s.Id)).ToList();
+                task.AllowedStudents.AddRange(selectedStudents);
+            }
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction("TaskDetails", new { id = taskId });
+        }
+
+        [Authorize(Roles = "Teacher,Admin")]
+        [HttpPost]
+        public async Task<IActionResult> DeleteTask(Guid taskId)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid.TryParse(userIdStr, out Guid userId);
+            var isAdmin = User.IsInRole("Admin");
+
+            var task = await _context.Tasks.Include(t => t.Lesson).ThenInclude(l => l.Course).FirstOrDefaultAsync(t => t.Id == taskId);
+            if (task == null) return NotFound();
+            if (task.Lesson.Course.OwnerId != userId && !isAdmin) return Forbid();
+
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            Guid lessonId = task.Lesson.Id;
+
+            if (isAdmin) ((Admin)currentUser!).DeleteTask(task.Lesson, task);
+            else ((Teacher)currentUser!).DeleteTask(task.Lesson, task);
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction("Lesson", new { id = lessonId });
+        }
+
         [Authorize(Roles = "Student,Teacher,Admin")]
         [HttpGet]
         public async Task<IActionResult> TaskDetails(Guid id, Guid? studentId)
@@ -868,7 +952,7 @@ namespace Platform.Controllers
 
         [Authorize(Roles = "Teacher")]
         [HttpPost]
-        public async Task<IActionResult> GradeTask(Guid taskId, Guid studentId, double gradeValue, string action)
+        public async Task<IActionResult> GradeTask(Guid taskId, Guid studentId, int gradeValue, string action)
         {
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             Guid.TryParse(userIdStr, out Guid userId);
@@ -881,8 +965,16 @@ namespace Platform.Controllers
 
             if (action == "Grade")
             {
+                if (response.FinalGrade != null)
+                {
+                    _context.Remove(response.FinalGrade);
+                }
+
                 teacher.GradeSubmission(response, gradeValue, "Оцінено");
+
+                _context.Add(response.FinalGrade);
             }
+
             else if (action == "Return")
             {
                 response.Status = SubmissionStatus.Rejected;
@@ -895,6 +987,60 @@ namespace Platform.Controllers
 
             await _context.SaveChangesAsync();
             return RedirectToAction("TaskDetails", new { id = taskId, studentId = studentId });
+        }
+
+        [Authorize(Roles = "Student")]
+        [HttpPost]
+        public async Task<IActionResult> AddResponseFile(Guid taskId, IFormFile file)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid.TryParse(userIdStr, out Guid userId);
+
+            var response = await _context.Responses
+                .Include(r => r.TargetTask)
+                .Include(r => r.AttachedFiles)
+                .FirstOrDefaultAsync(r => r.TargetTask.Id == taskId && r.Author.Id == userId);
+
+            if (response == null) return NotFound();
+
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
+            var savedFile = await _fileManager.SaveFileAsync(file, currentUser!);
+            if (savedFile != null)
+            {
+                _context.Files.Add(savedFile);
+                response.ModifyFiles(savedFile, true);
+            }
+
+            await _context.SaveChangesAsync();
+            return RedirectToAction("TaskDetails", new { id = taskId });
+        }
+
+        [Authorize(Roles = "Student")]
+        [HttpPost]
+        public async Task<IActionResult> RemoveResponseFile(Guid taskId, Guid fileId)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid.TryParse(userIdStr, out Guid userId);
+
+            var response = await _context.Responses
+                .Include(r => r.TargetTask)
+                .Include(r => r.AttachedFiles)
+                .FirstOrDefaultAsync(r => r.TargetTask.Id == taskId && r.Author.Id == userId);
+
+            if (response == null) return NotFound();
+
+            var fileToRemove = response.AttachedFiles.FirstOrDefault(f => f.Id == fileId);
+            if (fileToRemove != null)
+            {
+                response.ModifyFiles(fileToRemove, false);
+
+                _context.Files.Remove(fileToRemove);
+
+                await _context.SaveChangesAsync();
+            }
+
+            return RedirectToAction("TaskDetails", new { id = taskId });
         }
     }
 }

@@ -32,9 +32,11 @@ namespace Platform.Models
 
         public List<Lesson> GetAvailableContent(Course course)
         {
-            if (!course.Students.Contains(this)) return new List<Lesson>();
+            if (!course.Students.Any(s => s.Id == this.Id)) return new List<Lesson>();
 
-            return course.Lessons.Where(l => l.AllowedStudents.Contains(this)).ToList();
+            return course.Lessons
+                .Where(l => l.IsPublic || l.AllowedStudents.Any(s => s.Id == this.Id))
+                .ToList();
         }
 
         public StudentResponse SubmitTask(Task task, List<FileModel> files)

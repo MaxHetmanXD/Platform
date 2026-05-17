@@ -133,7 +133,7 @@
 
                             @foreach (var task in lesson.Tasks)
                             {
-                                <a href="#" class="item-block border-primary border-opacity-25">
+                                <a asp-action="TaskDetails" asp-route-id="@task.Id" class="item-block border-primary border-opacity-25">
                                     <div>
                                         <i class="bi bi-list-task text-primary me-2 fs-5"></i>
                                         <span class="fw-medium">@task.Title</span>

@@ -1,9 +1,11 @@
-﻿namespace Platform.Enums;
-
-public enum SubmissionStatus
+﻿namespace Platform.Enums
 {
-    Pending,   // Очікує перевірки
-    Checked,   // Перевірено
-    Rejected,  // Повернуто на доопрацювання
-    Overdue    // Прострочено
+    public enum SubmissionStatus
+    {
+        Draft,
+        Pending,
+        Checked,
+        Overdue,
+        Rejected
+    }
 }
