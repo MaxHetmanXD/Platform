@@ -34,8 +34,7 @@ namespace Platform.Controllers
 
             var fileBytes = await System.IO.File.ReadAllBytesAsync(fileMetadata.LocalPath);
 
-            // 3. А тут залишаємо просто File (це метод контролера для відправки браузеру)
-            return File(fileBytes, contentType);
+            return File(fileBytes, contentType, fileMetadata.FileName);
         }
     }
 }

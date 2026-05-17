@@ -26,6 +26,10 @@ builder.Services.AddScoped<Platform.Services.FileManager>(provider =>
     );
 });
 
+builder.Services.AddControllersWithViews();
+
+builder.Services.AddSingleton<Platform.Services.NotificationService>();
+
 builder.Services.AddOpenApi();
 
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
