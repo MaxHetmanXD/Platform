@@ -175,8 +175,9 @@
                     @foreach (var course in Model)
                     {
                         <div class="col">
+                            <a asp-controller="Course" asp-action="Details" asp-route-id="@course.Id" class="text-decoration-none text-dark">
                             <div class="course-card">
-                                
+                             
                                 @if (course.BannerId != null)
                                 {
                                     <img class="course-banner" src="/Files/Download?id=@course.BannerId" alt="Банер">
@@ -199,7 +200,7 @@
                                 </div>
                                 
                             </div>
-                        </div>
+                        </a></div>
                     }
 
                 </div>

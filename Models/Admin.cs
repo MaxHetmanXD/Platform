@@ -110,25 +110,29 @@ namespace Platform.Models
             course.ExcludeStudent(student);
         }
 
-        public Lesson CreateLesson(Course course, string title, string theory, List<FileModel> files)
+        public Lesson CreateLesson(Course course, string title, string text)
         {
-            if (course == null) throw new ArgumentNullException(nameof(course));
-            var lesson = new Lesson();
-            lesson.UpdateContent(title, theory, files);
-            course.AddLesson(lesson);
+            var lesson = new Lesson { Title = title, TheoryContent = text, Course = course, IsPublic = true };
+            course.Lessons.Add(lesson);
             return lesson;
         }
 
-        public void EditLesson(Lesson lesson, string title, string theory, List<FileModel> files)
+        public void EditLesson(Lesson lesson, string title, string text, bool isPublic, List<Student> allowedStudents)
         {
-            if (lesson == null) throw new ArgumentNullException(nameof(lesson));
-            lesson.UpdateContent(title, theory, files);
+            lesson.Title = title;
+            lesson.TheoryContent = text;
+            lesson.IsPublic = isPublic;
+
+            lesson.AllowedStudents.Clear();
+            if (!isPublic && allowedStudents != null)
+            {
+                lesson.AllowedStudents.AddRange(allowedStudents);
+            }
         }
 
         public void DeleteLesson(Course course, Lesson lesson)
         {
-            if (course == null || lesson == null) return;
-            course.RemoveLesson(lesson);
+            course.Lessons.Remove(lesson);
         }
 
         public Task CreateTask(Lesson lesson, string title, string theory, int maxPoints, DateTime? deadline, List<FileModel> files)
@@ -173,6 +177,17 @@ namespace Platform.Models
         {
             if (course == null) throw new ArgumentNullException(nameof(course));
 
+        }
+        public void UnbanStudent(Student student, Course course)
+        {
+            if (course == null || student == null) throw new ArgumentNullException();
+            course.RemoveFromBanList(student);
+        }
+
+        public void RejectStudent(Student student, Course course)
+        {
+            if (course == null || student == null) throw new ArgumentNullException();
+            course.RemoveFromPending(student);
         }
     }
 }

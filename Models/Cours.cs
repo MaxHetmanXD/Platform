@@ -162,5 +162,14 @@ namespace Platform.Models
 
             return 0;
         }
+        public void RemoveFromBanList(Student student)
+        {
+            BannedStudents.Remove(student);
+        }
+
+        public void RemoveFromPending(Student student)
+        {
+            PendingStudents.Remove(student);
+        }
     }
 }

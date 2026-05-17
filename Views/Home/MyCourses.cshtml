@@ -130,45 +130,46 @@
                     @foreach (var course in Model)
                     {
                         <div class="col">
-                            <div class="course-card">
+                            <a asp-controller="Course" asp-action="Details" asp-route-id="@course.Id" class="text-decoration-none text-dark">
+                                <div class="course-card">
                                 
-                                @if (course.BannerId != null)
-                                {
-                                    <img class="course-banner" src="/Files/Download?id=@course.BannerId" alt="Банер">
-                                }
-                                else
-                                {
-                                    <img class="course-banner" src="https://www.gstatic.com/classroom/themes/img_read.jpg" alt="Банер">
-                                }
-                                
-                                <div class="course-content">
-                                    <h3 class="course-title" title="@course.Title">@course.Title</h3>
-                                    <span class="course-badge">@course.CategoryName</span>
-                                </div>
-                                
-                                <div class="course-footer">
-                                    @if (course.IsTeacherView)
+                                    @if (course.BannerId != null)
                                     {
-                                        <span title="Середня оцінка всіх студентів">
-                                            <i class="bi bi-star-fill text-warning me-1"></i> Оцінка: @Math.Round(course.AverageGrade ?? 0, 1)
-                                        </span>
-                                        <span class="text-truncate ms-2" title="Кількість студентів">
-                                            <i class="bi bi-people-fill me-1 text-primary"></i> @course.StudentsCount
-                                        </span>
+                                        <img class="course-banner" src="/Files/Download?id=@course.BannerId" alt="Банер">
                                     }
                                     else
                                     {
-                                        <span title="Моя середня оцінка за курс">
-                                            <i class="bi bi-star-fill text-warning me-1"></i> Моя оцінка: @Math.Round(course.AverageGrade ?? 0, 1)
-                                        </span>
-                                        <span class="text-truncate ms-2" title="Власник курсу: @course.OwnerNickname">
-                                            <i class="bi bi-person-circle me-1"></i> @course.OwnerNickname
-                                        </span>
+                                        <img class="course-banner" src="https://www.gstatic.com/classroom/themes/img_read.jpg" alt="Банер">
                                     }
-                                </div>
                                 
-                            </div>
-                        </div>
+                                    <div class="course-content">
+                                        <h3 class="course-title" title="@course.Title">@course.Title</h3>
+                                        <span class="course-badge">@course.CategoryName</span>
+                                    </div>
+                                
+                                    <div class="course-footer">
+                                        @if (course.IsTeacherView)
+                                        {
+                                            <span title="Середня оцінка всіх студентів">
+                                                <i class="bi bi-star-fill text-warning me-1"></i> Оцінка: @Math.Round(course.AverageGrade ?? 0, 1)
+                                            </span>
+                                            <span class="text-truncate ms-2" title="Кількість студентів">
+                                                <i class="bi bi-people-fill me-1 text-primary"></i> @course.StudentsCount
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span title="Моя середня оцінка за курс">
+                                                <i class="bi bi-star-fill text-warning me-1"></i> Моя оцінка: @Math.Round(course.AverageGrade ?? 0, 1)
+                                            </span>
+                                            <span class="text-truncate ms-2" title="Власник курсу: @course.OwnerNickname">
+                                                <i class="bi bi-person-circle me-1"></i> @course.OwnerNickname
+                                            </span>
+                                        }
+                                    </div>
+                                
+                                </div>
+                        </a></div>
                     }
                 </div>
             </div>

@@ -4,13 +4,17 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Platform.Models
 {
     public class Task : IAttachable
     {
         public Guid Id { get; private set; } = Guid.NewGuid();
+        public Guid LessonId { get; set; }
 
+        [ForeignKey("LessonId")]
+        public Lesson Lesson { get; set; }
         public string Title { get; set; } = string.Empty;
         public string TheoryContent { get; set; } = string.Empty;
 

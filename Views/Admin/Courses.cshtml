@@ -68,20 +68,21 @@
                     @foreach (var course in Model)
                     {
                         <div class="col">
-                            <a href="#" class="text-decoration-none text-dark">
-                                <div class="course-card shadow-sm">
-                                    <img class="course-banner" src="@(course.BannerId != null ? $"/Files/Download?id={course.BannerId}" : "https://www.gstatic.com/classroom/themes/img_read.jpg")" alt="Банер">
-                                    <div class="course-content">
-                                        <h5 class="mb-1 text-truncate">@course.Title</h5>
-                                        <span class="badge bg-light text-dark border">@course.CategoryName</span>
+                            <a asp-controller="Course" asp-action="Details" asp-route-id="@course.Id" class="text-decoration-none text-dark">
+                                <a href="#" class="text-decoration-none text-dark">
+                                    <div class="course-card shadow-sm">
+                                        <img class="course-banner" src="@(course.BannerId != null ? $"/Files/Download?id={course.BannerId}" : "https://www.gstatic.com/classroom/themes/img_read.jpg")" alt="Банер">
+                                        <div class="course-content">
+                                            <h5 class="mb-1 text-truncate">@course.Title</h5>
+                                            <span class="badge bg-light text-dark border">@course.CategoryName</span>
+                                        </div>
+                                        <div class="course-footer d-flex justify-content-between">
+                                            <span><i class="bi bi-people-fill text-primary"></i> @course.StudentsCount</span>
+                                            <span><i class="bi bi-person-circle"></i> @course.OwnerNickname</span>
+                                        </div>
                                     </div>
-                                    <div class="course-footer d-flex justify-content-between">
-                                        <span><i class="bi bi-people-fill text-primary"></i> @course.StudentsCount</span>
-                                        <span><i class="bi bi-person-circle"></i> @course.OwnerNickname</span>
-                                    </div>
-                                </div>
-                            </a>
-                        </div>
+                                </a>
+                            </a></div>
                     }
                 </div>
             </div>

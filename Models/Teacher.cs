@@ -84,26 +84,30 @@ namespace Platform.Models
             student.EnrolledCourses.Remove(course);
         }
 
-        public Lesson CreateLesson(Course course, string title, string theory, List<FileModel> files)
+        public Lesson CreateLesson(Course course, string title, string text)
         {
-            var lesson = new Lesson
-            {
-                Title = title,
-                TheoryContent = theory,
-                Attachments = files ?? new List<FileModel>()
-            };
+            if (course.OwnerId != this.Id) throw new UnauthorizedAccessException("Ви не власник цього курсу.");
+            var lesson = new Lesson { Title = title, TheoryContent = text, Course = course, IsPublic = true };
             course.Lessons.Add(lesson);
             return lesson;
         }
 
-        public void EditLesson(Lesson lesson, string theory, List<FileModel> files)
+        public void EditLesson(Lesson lesson, string title, string text, bool isPublic, List<Student> allowedStudents)
         {
-            lesson.TheoryContent = theory;
-            lesson.Attachments = files ?? new List<FileModel>();
+            lesson.Title = title;
+            lesson.TheoryContent = text;
+            lesson.IsPublic = isPublic;
+
+            lesson.AllowedStudents.Clear();
+            if (!isPublic && allowedStudents != null)
+            {
+                lesson.AllowedStudents.AddRange(allowedStudents);
+            }
         }
 
         public void DeleteLesson(Course course, Lesson lesson)
         {
+            if (course.OwnerId != this.Id) throw new UnauthorizedAccessException();
             course.Lessons.Remove(lesson);
         }
 
@@ -155,6 +159,23 @@ namespace Platform.Models
                 throw new UnauthorizedAccessException("Ви не є власником цього курсу.");
             }
             OwnCourses.Remove(course);
+        }
+        public void UnbanStudent(Student student, Course course)
+        {
+            if (course.OwnerId != this.Id)
+            {
+                throw new UnauthorizedAccessException("Ви не є власником цього курсу.");
+            }
+            course.RemoveFromBanList(student);
+        }
+
+        public void RejectStudent(Student student, Course course)
+        {
+            if (course.OwnerId != this.Id)
+            {
+                throw new UnauthorizedAccessException("Ви не є власником цього курсу.");
+            }
+            course.RemoveFromPending(student);
         }
     }
 }

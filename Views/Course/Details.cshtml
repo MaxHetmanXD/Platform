@@ -1,0 +1,200 @@
+﻿@model Platform.Models.ViewModels.CourseDetailsViewModel
+@{ ViewData["Title"] = Model.Title; Layout = null; }
+
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="utf-8" /> <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; color: #202124; font-family: 'Google Sans', sans-serif; }
+        .google-header { background-color: #ffffff; border-bottom: 1px solid #dadce0; padding: 10px 24px; position: sticky; top: 0; z-index: 1000; }
+        .sidebar-menu a { display: block; padding: 12px 24px; color: #3c4043; text-decoration: none; border-radius: 0 24px 24px 0; font-weight: 500; margin-bottom: 4px; }
+        .sidebar-menu a:hover { background-color: #f1f3f4; }
+        .sidebar-menu a.active { background-color: #e8f0fe; color: #1a73e8; }
+        .content-card { background: #fff; border: 1px solid #dadce0; border-radius: 8px; padding: 24px; }
+        .global-search { max-width: 600px; width: 100%; background-color: #f1f3f4; border: none; border-radius: 8px; padding: 10px 20px; }
+        .global-search:focus { background-color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.2); outline: none; }
+    </style>
+</head>
+<body>
+    <header class="google-header d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center" style="width: 200px;">
+            <i class="bi bi-book text-primary fs-3 me-2"></i><span class="fs-5 fw-bold text-secondary">Platform</span>
+        </div>
+
+        <div class="flex-grow-1 d-flex justify-content-center px-4">
+            <input type="text" class="global-search" placeholder="Глобальний пошук по платформі...">
+        </div>
+
+        <div class="d-flex align-items-center justify-content-end" style="width: 200px;">
+            @if (Model.IsGuest)
+            {
+                <a asp-controller="Account" asp-action="Login" class="btn btn-primary rounded-pill px-4">Увійти</a>
+            }
+            else
+            {
+                <a href="#" class="btn btn-light rounded-circle p-2 me-3 position-relative" title="Повідомлення">
+                    <i class="bi bi-bell fs-5 text-secondary"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                </a>
+
+                <a asp-controller="Account" asp-action="Profile" class="btn btn-outline-primary rounded-pill px-4">Профіль</a>
+            }
+        </div>
+    </header>
+
+    <div class="container-fluid mt-4">
+        <nav style="--bs-breadcrumb-divider: '/';" aria-label="breadcrumb" class="ms-3 mb-4">
+            <ol class="breadcrumb fs-5">
+                <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index" class="text-decoration-none">Каталог</a></li>
+                <li class="breadcrumb-item active" aria-current="page">@Model.Title</li>
+            </ol>
+        </nav>
+
+        <div class="row">
+            <div class="col-md-3">
+                <nav class="sidebar-menu pe-3">
+                    <a asp-controller="Home" asp-action="Index"><i class="bi bi-grid me-3"></i>Каталог курсів</a>
+                    @if (!Model.IsGuest && !User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Home" asp-action="MyCourses"><i class="bi bi-journal-bookmark me-3"></i>Мої курси</a>
+                    }
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <a asp-controller="Admin" asp-action="Index" class="text-danger border-top mt-3 pt-3"><i class="bi bi-shield-lock me-3"></i>Для адмінів</a>
+                    }
+                </nav>
+            </div>
+
+            <div class="col-md-9 pb-5">
+                
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger"><i class="bi bi-exclamation-triangle-fill"></i> @TempData["Error"]</div>
+                }
+                @if (TempData["Message"] != null)
+                {
+                    <div class="alert alert-success"><i class="bi bi-check-circle-fill"></i> @TempData["Message"]</div>
+                }
+
+                <div class="content-card">
+                    <div class="d-flex mb-4 gap-2 border-bottom pb-3">
+                        <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-primary fw-bold">Курс</a>
+                        
+                        @if (!Model.IsGuest)
+                        {
+                            <a asp-action="Lessons" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Уроки</a>
+                            <a asp-action="Grades" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Оцінки</a>
+                            <a asp-action="Participants" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Учасники</a>
+                        }
+
+                        @if (Model.IsOwnerOrAdmin)
+                        {
+                            <a asp-action="Manage" asp-route-id="@Model.Id" class="btn btn-outline-dark ms-auto fw-bold"><i class="bi bi-gear"></i> Налаштування</a>
+                        }
+                    </div>
+
+                    <h2 class="fw-bold mb-3">@Model.Title</h2>
+
+                    <div class="mb-4">
+                        @if (Model.BannerId != null)
+                        {
+                            <img src="/Files/Download?id=@Model.BannerId" class="img-fluid rounded shadow-sm" style="width: 100%; height: 250px; object-fit: cover;" />
+                        }
+                        else
+                        {
+                            <div class="bg-secondary rounded d-flex align-items-center justify-content-center text-white shadow-sm" style="width: 100%; height: 250px;">
+                                <i class="bi bi-image" style="font-size: 4rem;"></i>
+                            </div>
+                        }
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-8">
+                            <h5 class="text-muted"><i class="bi bi-info-circle"></i> Опис курсу</h5>
+                            <div class="p-3 bg-light rounded" style="min-height: 150px; white-space: pre-wrap; border: 1px solid #dadce0;">@Model.Description</div>
+                        </div>
+                        
+                        <div class="col-md-4">
+                            <div class="card shadow-sm border-0 bg-light">
+                                <div class="card-body">
+                                    <p class="mb-2"><i class="bi bi-tags text-primary"></i> Категорія: <strong>@Model.Category</strong></p>
+                                    <p class="mb-3">
+                                        <i class="bi bi-shield-lock text-secondary"></i> Доступ: 
+                                        @if (Model.IsPublic)
+                                        {
+                                            <span class="badge bg-success">Публічний</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-danger">Приватний</span>
+                                        }
+                                    </p>
+
+                                    @if (Model.IsGuest)
+                                    {
+                                        <a asp-controller="Account" asp-action="Login" class="btn btn-primary w-100 fw-bold mt-2">Вступити</a>
+                                    }
+                                    else if (Model.IsStudent)
+                                    {
+                                        if (Model.IsUserBanned)
+                                        {
+                                            <button class="btn btn-danger w-100 fw-bold mt-2" disabled>Ви заблоковані</button>
+                                        }
+                                        else if (Model.IsUserEnrolled)
+                                        {
+                                            <button class="btn btn-success w-100 fw-bold mt-2" disabled><i class="bi bi-check-lg"></i> Ви є учасником</button>
+                                        }
+                                        else if (Model.IsUserPending)
+                                        {
+                                            <button class="btn btn-warning w-100 fw-bold mt-2 text-dark" disabled><i class="bi bi-hourglass-split"></i> Очікується підтвердження</button>
+                                        }
+                                        else
+                                        {
+                                            if (Model.IsPublic)
+                                            {
+                                                <form asp-action="Enroll" method="post" class="mt-2">
+                                                    <input type="hidden" name="id" value="@Model.Id" />
+                                                    <button type="submit" class="btn btn-primary w-100 fw-bold">Вступити</button>
+                                                </form>
+                                            }
+                                            else
+                                            {
+                                                <button class="btn btn-primary w-100 fw-bold mt-2" data-bs-toggle="modal" data-bs-target="#enrollModal">Вступити (Потрібен пароль)</button>
+                                            }
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="enrollModal" tabindex="-1">
+        <div class="modal-dialog modal-sm">
+            <div class="modal-content">
+                <form asp-action="Enroll" method="post">
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <div class="modal-header">
+                        <h5 class="modal-title">Приватний курс</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="small text-muted mb-3">Введіть пароль для вступу на курс.</p>
+                        <input type="password" name="coursePassword" class="form-control mb-3" placeholder="Пароль курсу" required />
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">Підтвердити</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

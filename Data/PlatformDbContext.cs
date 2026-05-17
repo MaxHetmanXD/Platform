@@ -53,6 +53,11 @@ namespace Platform.Data
                 .WithOne()
                 .OnDelete(DeleteBehavior.Cascade);
 
+            modelBuilder.Entity<Lesson>()
+                .HasOne(l => l.Course)
+                .WithMany(c => c.Lessons)
+                .HasForeignKey(l => l.CourseId);
+
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Login)
                 .IsUnique();

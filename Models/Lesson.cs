@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Platform.Interfaces;
 using Platform.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Platform.Models
 {
@@ -18,6 +19,12 @@ namespace Platform.Models
         public bool HasAttachments => Attachments.Any();
 
         public List<Task> Tasks { get; set; } = new List<Task>();
+        public Guid CourseId { get; set; }
+
+        [ForeignKey("CourseId")]
+        public Course Course { get; set; }
+
+        public bool IsPublic { get; set; } = true;
 
         public List<Student> AllowedStudents { get; set; } = new List<Student>();
 
@@ -80,7 +87,8 @@ namespace Platform.Models
             {
                 { "Checked", 0 },
                 { "Pending", 0 },
-                { "Overdue", 0 }
+                { "Overdue", 0 },
+                { "Rejected", 0 }
             };
 
             var allResponses = Tasks.SelectMany(t => t.Responses);
@@ -90,6 +98,7 @@ namespace Platform.Models
                 if (response.Status == SubmissionStatus.Checked) stats["Checked"]++;
                 else if (response.Status == SubmissionStatus.Pending) stats["Pending"]++;
                 else if (response.Status == SubmissionStatus.Overdue) stats["Overdue"]++;
+                else if (response.Status == SubmissionStatus.Rejected) stats["Rejected"]++;
             }
 
             return stats;
