@@ -36,6 +36,11 @@ namespace Platform.Services
         {
             if (file == null || file.Length == 0) return null;
 
+            if (!CheckSystemLimits(file.Length))
+            {
+                throw new InvalidOperationException("Недостатньо вільного місця на сервері або перевищено ліміт.");
+            }
+
             var fileModel = new FileModel(file.FileName, file.Length, uploader);
 
             string storageName = fileModel.GenerateStorageName();
@@ -171,6 +176,28 @@ namespace Platform.Services
                         }
                     }
                 }
+            }
+
+            foreach (var filePath in physicalFiles)
+            {
+                if (!activeFiles.Contains(filePath))
+                {
+                    DeleteFile(filePath);
+                }
+            }
+        }
+
+        public void CleanOrphanedFiles(Platform.Data.PlatformDbContext dbContext)
+        {
+            if (dbContext == null) return;
+
+            var physicalFiles = Directory.GetFiles(RootFolderPath).ToList();
+            var activeFiles = new HashSet<string>();
+
+            var dbFiles = dbContext.Files.Where(f => !string.IsNullOrEmpty(f.LocalPath)).Select(f => f.LocalPath).ToList();
+            foreach (var path in dbFiles)
+            {
+                activeFiles.Add(path);
             }
 
             foreach (var filePath in physicalFiles)

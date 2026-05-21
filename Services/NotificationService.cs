@@ -8,8 +8,6 @@ namespace Platform.Services
 {
     public class NotificationService
     {
-        public string SmtpConfig { get; set; } = string.Empty;
-
         public List<string> EventLog { get; set; } = new List<string>();
         public List<NotificationMessage> Notifications { get; set; } = new List<NotificationMessage>();
 
@@ -61,6 +59,15 @@ namespace Platform.Services
             {
                 string message = $"Студент {student.Nickname} здав роботу до завдання '{task.Title}'.";
                 Send(teacher, "Нова відповідь", message);
+            }
+        }
+
+        public void NotifyTeacherOfSubmission(Student student, Task task, Course course)
+        {
+            if (course?.Owner != null)
+            {
+                string message = $"Студент {student.Nickname} здав роботу до завдання '{task.Title}'.";
+                Send(course.Owner, "Нова відповідь", message);
             }
         }
 

@@ -18,11 +18,13 @@ namespace Platform.Controllers
     {
         private readonly PlatformDbContext _context;
         private readonly FileManager _fileManager;
+        private readonly NotificationService _notificationService;
 
-        public CourseController(PlatformDbContext context, FileManager fileManager)
+        public CourseController(PlatformDbContext context, FileManager fileManager, NotificationService notificationService)
         {
             _context = context;
             _fileManager = fileManager;
+            _notificationService = notificationService;
         }
 
         [AllowAnonymous]
@@ -318,10 +320,27 @@ namespace Platform.Controllers
                 }
             }
 
+            string actionWord = actionType switch
+            {
+                "Accept" => "enrolled",
+                "Reject" => "excluded",
+                "Ban" => "excluded",
+                "Remove" => "excluded",
+                "Unban" => "enrolled",
+                _ => ""
+            };
+
+            if (!string.IsNullOrEmpty(actionWord))
+            {
+                _notificationService.NotifyEnrollmentChange(student, course, actionWord);
+            }
+
             await _context.SaveChangesAsync();
             return RedirectToAction("Participants", new { id = courseId });
         }
 
+        [Authorize(Roles = "Student,Teacher,Admin")]
+        [HttpGet]
         [Authorize(Roles = "Student,Teacher,Admin")]
         [HttpGet]
         public async Task<IActionResult> Lessons(Guid id, string? searchString, string? sortOrder)
@@ -330,24 +349,13 @@ namespace Platform.Controllers
             Guid.TryParse(userIdStr, out Guid userId);
             var isAdmin = User.IsInRole("Admin");
 
-
             var course = await _context.Courses
                 .Include(c => c.Students)
-                .Include(c => c.Lessons)
-                    .ThenInclude(l => l.AllowedStudents)
-                .Include(c => c.Lessons)
-                    .ThenInclude(l => l.Attachments)
-                .Include(c => c.Lessons)
-                    .ThenInclude(l => l.Tasks)
-                        .ThenInclude(t => t.AllowedStudents)
-                .Include(c => c.Lessons)
-                    .ThenInclude(l => l.Tasks)
-                        .ThenInclude(t => t.Responses)
-                            .ThenInclude(r => r.FinalGrade)
-                .Include(c => c.Lessons)
-                    .ThenInclude(l => l.Tasks)
-                        .ThenInclude(t => t.Responses)
-                            .ThenInclude(r => r.Author)
+                .Include(c => c.Lessons).ThenInclude(l => l.AllowedStudents)
+                .Include(c => c.Lessons).ThenInclude(l => l.Attachments)
+                .Include(c => c.Lessons).ThenInclude(l => l.Tasks).ThenInclude(t => t.AllowedStudents)
+                .Include(c => c.Lessons).ThenInclude(l => l.Tasks).ThenInclude(t => t.Responses).ThenInclude(r => r.FinalGrade)
+                .Include(c => c.Lessons).ThenInclude(l => l.Tasks).ThenInclude(t => t.Responses).ThenInclude(r => r.Author)
                 .FirstOrDefaultAsync(c => c.Id == id);
 
             if (course == null) return NotFound();
@@ -368,7 +376,11 @@ namespace Platform.Controllers
             };
 
             IEnumerable<Lesson> availableLessons = course.Lessons;
-            if (student != null) availableLessons = student.GetAvailableContent(course);
+
+            if (student != null)
+            {
+                availableLessons = student.GetAvailableContent(course);
+            }
 
             foreach (var lesson in availableLessons)
             {
@@ -387,8 +399,12 @@ namespace Platform.Controllers
                     ReadableSize = f.GetReadableSize()
                 }).ToList();
 
-                IEnumerable<Task> availableTasks = lesson.Tasks;
-                if (student != null) availableTasks = lesson.GetAccessibleTasks(student);
+                IEnumerable<Platform.Models.Task> availableTasks = lesson.Tasks;
+
+                if (student != null)
+                {
+                    availableTasks = lesson.Tasks.Where(t => t.IsVisible || t.AllowedStudents.Any(s => s.Id == userId));
+                }
 
                 foreach (var task in availableTasks)
                 {
@@ -446,7 +462,11 @@ namespace Platform.Controllers
             Guid.TryParse(userIdStr, out Guid userId);
             var isAdmin = User.IsInRole("Admin");
 
-            var course = await _context.Courses.Include(c => c.Lessons).FirstOrDefaultAsync(c => c.Id == courseId);
+            var course = await _context.Courses
+                .Include(c => c.Lessons)
+                .Include(c => c.Students)
+                .FirstOrDefaultAsync(c => c.Id == courseId);
+
             if (course == null) return NotFound();
             if (course.OwnerId != userId && !isAdmin) return Forbid();
 
@@ -458,7 +478,20 @@ namespace Platform.Controllers
             if (isAdmin) newLesson = ((Admin)currentUser!).CreateLesson(course, $"Новий урок {randomId}", "Опис вашого уроку...");
             else newLesson = ((Teacher)currentUser!).CreateLesson(course, $"Новий урок {randomId}", "Опис вашого уроку...");
 
+            newLesson.IsPublic = true;
+            newLesson.SetAccessibility(course.Students.ToList());
+
+            course.AddLesson(newLesson);
             _context.Lessons.Add(newLesson);
+
+            if (course.Students != null)
+            {
+                foreach (var student in course.Students)
+                {
+                    _notificationService.Send(student, "Новий урок", $"На курсі '{course.Title}' з'явився новий урок!");
+                }
+            }
+
             await _context.SaveChangesAsync();
             return RedirectToAction("Lesson", new { id = newLesson.Id });
         }
@@ -505,7 +538,7 @@ namespace Platform.Controllers
 
             if (student != null) vm.AverageGrade = student.GetLessonAverage(lesson);
 
-            vm.Files = lesson.Attachments.Select(f => new FileItemViewModel { Id = f.Id, FileName = f.FileName, ReadableSize = f.GetReadableSize() }).ToList();
+            vm.Files = lesson.GetAttachments().Select(f => new FileItemViewModel { Id = f.Id, FileName = f.FileName, ReadableSize = f.GetReadableSize() }).ToList();
 
             IEnumerable<Task> availableTasks = lesson.Tasks;
             if (student != null) availableTasks = lesson.GetAccessibleTasks(student);
@@ -526,6 +559,10 @@ namespace Platform.Controllers
             {
                 vm.CourseStudents = lesson.Course.Students.Select(s => new ParticipantItemViewModel { Id = s.Id, Nickname = s.Nickname, SpecialField = s.Group }).ToList();
                 vm.AllowedStudentIds = lesson.AllowedStudents.Select(s => s.Id).ToList();
+
+                var stats = lesson.GetSubmissionStats();
+                ViewData["CheckedCount"] = stats["Checked"];
+                ViewData["PendingCount"] = stats["Pending"];
             }
 
             return View(vm);
@@ -550,34 +587,64 @@ namespace Platform.Controllers
 
             var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
-            var selectedStudents = lesson.Course.Students.Where(s => allowedStudentIds.Contains(s.Id)).ToList();
-
-            if (isAdmin) ((Admin)currentUser!).EditLesson(lesson, title, info, isPublic, selectedStudents);
-            else ((Teacher)currentUser!).EditLesson(lesson, title, info, isPublic, selectedStudents);
-
             if (filesToRemove != null && filesToRemove.Any())
             {
                 var filesToDelete = lesson.Attachments.Where(f => filesToRemove.Contains(f.Id)).ToList();
                 foreach (var file in filesToDelete)
                 {
-                    lesson.Attachments.Remove(file);
+                    lesson.RemoveFile(file);
+                    _fileManager.DeleteFile(file.LocalPath);
                     _context.Files.Remove(file);
                 }
             }
 
             if (newFiles != null && newFiles.Any())
             {
+                string[] allowedExtensions = { ".pdf", ".docx", ".doc", ".xls", ".xlsx", ".ppt", ".pptx", ".zip", ".rar", ".png", ".jpg", ".txt" };
                 foreach (var file in newFiles)
                 {
-                    var savedFile = await _fileManager.SaveFileAsync(file, currentUser!);
-                    if (savedFile != null)
+                    var tempFileModel = new FileModel(file.FileName, file.Length, currentUser!);
+                    if (!tempFileModel.Validate(_fileManager.MaxFileSize, allowedExtensions)) continue;
+
+                    try
                     {
-                        lesson.Attachments.Add(savedFile);
-                        _context.Files.Add(savedFile);
+                        var savedFile = await _fileManager.SaveFileAsync(file, currentUser!);
+                        if (savedFile != null)
+                        {
+                            lesson.AttachFile(savedFile);
+                            _context.Files.Add(savedFile);
+                        }
                     }
+                    catch (InvalidOperationException) { }
                 }
             }
 
+            try
+            {
+                lesson.UpdateContent(title, info ?? string.Empty, lesson.Attachments);
+            }
+            catch (ArgumentException ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("Lesson", new { id = lessonId });
+            }
+
+            bool finalIsPublic = isPublic || (allowedStudentIds == null || !allowedStudentIds.Any());
+
+            List<Student> finalStudentsList;
+            if (!finalIsPublic && allowedStudentIds != null && allowedStudentIds.Any())
+            {
+                finalStudentsList = lesson.Course.Students.Where(s => allowedStudentIds.Contains(s.Id)).ToList();
+            }
+            else
+            {
+                finalStudentsList = lesson.Course.Students.ToList();
+            }
+
+            if (isAdmin) ((Admin)currentUser!).EditLesson(lesson, lesson.Title, lesson.TheoryContent, finalIsPublic, finalStudentsList);
+            else ((Teacher)currentUser!).EditLesson(lesson, lesson.Title, lesson.TheoryContent, finalIsPublic, finalStudentsList);
+
+            lesson.IsPublic = finalIsPublic;
             await _context.SaveChangesAsync();
             return RedirectToAction("Lesson", new { id = lessonId });
         }
@@ -590,15 +657,19 @@ namespace Platform.Controllers
             Guid.TryParse(userIdStr, out Guid userId);
             var isAdmin = User.IsInRole("Admin");
 
-            var lesson = await _context.Lessons.Include(l => l.Course).FirstOrDefaultAsync(l => l.Id == lessonId);
+            var lesson = await _context.Lessons.Include(l => l.Course).ThenInclude(c => c.Lessons).FirstOrDefaultAsync(l => l.Id == lessonId);
             if (lesson == null) return NotFound();
             if (lesson.Course.OwnerId != userId && !isAdmin) return Forbid();
 
             var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             Guid courseId = lesson.Course.Id;
 
+            lesson.Course.RemoveLesson(lesson);
+
             if (isAdmin) ((Admin)currentUser!).DeleteLesson(lesson.Course, lesson);
             else ((Teacher)currentUser!).DeleteLesson(lesson.Course, lesson);
+
+            _context.Lessons.Remove(lesson);
 
             await _context.SaveChangesAsync();
             return RedirectToAction("Lessons", new { id = courseId });
@@ -625,6 +696,8 @@ namespace Platform.Controllers
             bool isStudentEnrolled = course.Students.Any(s => s.Id == userId);
             bool isOwner = (course.OwnerId == userId);
             if (!isStudentEnrolled && !isOwner && !isAdmin) return Forbid();
+
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
             var vm = new CourseGradesViewModel
             {
@@ -664,6 +737,16 @@ namespace Platform.Controllers
                     AvatarId = student.AvatarId
                 };
 
+                List<Platform.DTOs.TaskStatusDTO>? basicAnalytics = null;
+                if (currentUser is Teacher teacher)
+                {
+                    basicAnalytics = teacher.GetStudentDetails(student, course);
+                }
+                else if (currentUser is Student currentStudent && currentStudent.Id == student.Id)
+                {
+                    basicAnalytics = currentStudent.GetTaskAnalytics(course);
+                }
+
                 double totalGrade = 0;
                 int gradedTasksCount = 0;
 
@@ -683,7 +766,16 @@ namespace Platform.Controllers
                             Deadline = task.Deadline
                         };
 
-                        taskVm.Status = task.GetTaskStatus(student);
+                        var analyticsItem = basicAnalytics?.FirstOrDefault(a => a.TaskTitle == task.Title);
+                        if (analyticsItem != null)
+                        {
+                            taskVm.Status = analyticsItem.Status;
+                        }
+                        else
+                        {
+                            taskVm.Status = task.GetTaskStatus(student);
+                        }
+
                         var grade = task.GetStudentGrade(student);
 
                         if (grade != null)
@@ -731,7 +823,11 @@ namespace Platform.Controllers
             Guid.TryParse(userIdStr, out Guid userId);
             var isAdmin = User.IsInRole("Admin");
 
-            var lesson = await _context.Lessons.Include(l => l.Course).FirstOrDefaultAsync(l => l.Id == lessonId);
+            var lesson = await _context.Lessons
+                .Include(l => l.Course).ThenInclude(c => c.Students)
+                .Include(l => l.Tasks)
+                .FirstOrDefaultAsync(l => l.Id == lessonId);
+
             if (lesson == null) return NotFound();
             if (lesson.Course.OwnerId != userId && !isAdmin) return Forbid();
 
@@ -743,7 +839,20 @@ namespace Platform.Controllers
             if (isAdmin) newTask = ((Admin)currentUser!).CreateTask(lesson, $"Нове завдання {randomId}", "Опис...", 100, DateTime.Now.AddDays(7), new List<FileModel>());
             else newTask = ((Teacher)currentUser!).CreateTask(lesson, $"Нове завдання {randomId}", "Опис...", 100, DateTime.Now.AddDays(7), new List<FileModel>());
 
+            newTask.IsVisible = true;
+            newTask.SetAccessibility(lesson.Course.Students.ToList());
+
+            lesson.AddTask(newTask);
             _context.Tasks.Add(newTask);
+
+            if (lesson.Course.Students != null)
+            {
+                foreach (var student in lesson.Course.Students)
+                {
+                    _notificationService.Send(student, "Нове завдання", $"До уроку '{lesson.Title}' додано нове завдання!");
+                }
+            }
+
             await _context.SaveChangesAsync();
             return RedirectToAction("TaskDetails", new { id = newTask.Id });
         }
@@ -772,38 +881,58 @@ namespace Platform.Controllers
                 var filesToDelete = task.Attachments.Where(f => filesToRemove.Contains(f.Id)).ToList();
                 foreach (var file in filesToDelete)
                 {
-                    task.Attachments.Remove(file);
+                    task.RemoveFile(file);
+                    _fileManager.DeleteFile(file.LocalPath);
                     _context.Files.Remove(file);
                 }
             }
 
             if (newFiles != null && newFiles.Any())
             {
+                string[] allowedExtensions = { ".pdf", ".docx", ".doc", ".zip", ".rar", ".png", ".jpg", ".txt" };
                 foreach (var file in newFiles)
                 {
-                    var savedFile = await _fileManager.SaveFileAsync(file, currentUser!);
-                    if (savedFile != null)
+                    var tempFileModel = new FileModel(file.FileName, file.Length, currentUser!);
+                    if (!tempFileModel.Validate(_fileManager.MaxFileSize, allowedExtensions)) continue;
+
+                    try
                     {
-                        task.Attachments.Add(savedFile);
-                        _context.Files.Add(savedFile);
+                        var savedFile = await _fileManager.SaveFileAsync(file, currentUser!);
+                        if (savedFile != null)
+                        {
+                            task.AttachFile(savedFile);
+                            _context.Files.Add(savedFile);
+                        }
                     }
+                    catch (InvalidOperationException) { }
                 }
             }
 
             DateTime finalDeadline = deadline ?? DateTime.MaxValue;
 
-            if (isAdmin)
-                ((Admin)currentUser!).EditTask(task, title, info, maxPoints, finalDeadline, task.Attachments);
-            else
-                ((Teacher)currentUser!).EditTask(task, title, info, maxPoints, finalDeadline, task.Attachments);
+            bool finalIsVisible = isVisible || (allowedStudentIds == null || !allowedStudentIds.Any());
+            task.IsVisible = finalIsVisible;
 
-            task.IsVisible = isVisible;
-
-            task.AllowedStudents.Clear();
-            if (!isVisible && allowedStudentIds != null)
+            List<Student> finalStudentsList;
+            if (!finalIsVisible && allowedStudentIds != null && allowedStudentIds.Any())
             {
-                var selectedStudents = task.Lesson.Course.Students.Where(s => allowedStudentIds.Contains(s.Id)).ToList();
-                task.AllowedStudents.AddRange(selectedStudents);
+                finalStudentsList = task.Lesson.Course.Students.Where(s => allowedStudentIds.Contains(s.Id)).ToList();
+            }
+            else
+            {
+                finalStudentsList = task.Lesson.Course.Students.ToList();
+            }
+
+            if (isAdmin)
+            {
+                ((Admin)currentUser!).EditTask(task, title, info, maxPoints, finalDeadline, task.Attachments);
+                var currentAdmin = currentUser as Admin;
+                currentAdmin?.SetAccessibility(task, finalStudentsList);
+            }
+            else
+            {
+                ((Teacher)currentUser!).EditTask(task, title, info, maxPoints, finalDeadline, task.Attachments);
+                task.SetAccessibility(finalStudentsList);
             }
 
             await _context.SaveChangesAsync();
@@ -861,7 +990,8 @@ namespace Platform.Controllers
 
             if (student != null)
             {
-                if (!task.IsVisible && !task.AllowedStudents.Any(s => s.Id == student.Id)) return Forbid();
+                if (!task.IsVisible && !task.CheckSubmissionEligibility(student)) return Forbid();
+
                 studentId = student.Id;
             }
 
@@ -885,7 +1015,7 @@ namespace Platform.Controllers
                 IsStudent = (student != null)
             };
 
-            vm.TaskFiles = task.Attachments.Select(f => new FileItemViewModel { Id = f.Id, FileName = f.FileName, ReadableSize = f.GetReadableSize() }).ToList();
+            vm.TaskFiles = task.GetAttachments().Select(f => new FileItemViewModel { Id = f.Id, FileName = f.FileName, ReadableSize = f.GetReadableSize() }).ToList();
 
             if (studentId.HasValue)
             {
@@ -929,12 +1059,43 @@ namespace Platform.Controllers
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             Guid.TryParse(userIdStr, out Guid userId);
 
-            var response = await _context.Responses.Include(r => r.FinalGrade).FirstOrDefaultAsync(r => r.TargetTask.Id == taskId && r.Author.Id == userId);
-            if (response == null) return NotFound();
+            var response = await _context.Responses
+                .Include(r => r.TargetTask)
+                    .ThenInclude(t => t.Lesson)
+                        .ThenInclude(l => l.Course)
+                            .ThenInclude(c => c.Owner)
+                .Include(r => r.FinalGrade)
+                .Include(r => r.Author)
+                .FirstOrDefaultAsync(r => r.TargetTask.Id == taskId && r.Author.Id == userId);
+
+            if (response == null) return NotFound("Відповідь не знайдена.");
+
+            var student = response.Author as Student;
+            if (student == null) return BadRequest("Користувач не є студентом.");
 
             if (action == "Send")
             {
-                response.Status = SubmissionStatus.Pending;
+                try
+                {
+                    student.SubmitTask(response);
+
+                    if (response.TargetTask.IsOverdue())
+                    {
+                        var currentCourse = response.TargetTask.Lesson.Course;
+                        _notificationService.NotifyTeacherOfSubmission(student, response.TargetTask, currentCourse);
+                        TempData["Warning"] = "Завдання відправлено, але дедлайн вже минув!";
+                    }
+                    else
+                    {
+                        var currentCourse = response.TargetTask.Lesson.Course;
+                        _notificationService.NotifyTeacherOfSubmission(student, response.TargetTask, currentCourse);
+                        TempData["Message"] = "Завдання успішно відправлено на перевірку!";
+                    }
+                }
+                catch (InvalidOperationException ex)
+                {
+                    TempData["Error"] = ex.Message;
+                }
             }
             else if (action == "Return")
             {
@@ -957,7 +1118,12 @@ namespace Platform.Controllers
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             Guid.TryParse(userIdStr, out Guid userId);
 
-            var response = await _context.Responses.Include(r => r.TargetTask).Include(r => r.FinalGrade).FirstOrDefaultAsync(r => r.TargetTask.Id == taskId && r.Author.Id == studentId);
+            var response = await _context.Responses
+                .Include(r => r.TargetTask)
+                .Include(r => r.FinalGrade)
+                .Include(r => r.Author)
+                .FirstOrDefaultAsync(r => r.TargetTask.Id == taskId && r.Author.Id == studentId);
+
             if (response == null) return NotFound();
 
             var teacher = await _context.Users.OfType<Teacher>().FirstOrDefaultAsync(u => u.Id == userId);
@@ -965,16 +1131,37 @@ namespace Platform.Controllers
 
             if (action == "Grade")
             {
-                if (response.FinalGrade != null)
+                try
                 {
-                    _context.Remove(response.FinalGrade);
+                    if (response.FinalGrade != null)
+                    {
+                        if (!response.FinalGrade.ValidateValue(gradeValue, response.TargetTask.MaxPoints))
+                        {
+                            TempData["Error"] = $"Помилка: Оцінка ({gradeValue}) не може перевищувати максимум завдання ({response.TargetTask.MaxPoints}).";
+                            return RedirectToAction("TaskDetails", new { id = taskId, studentId = studentId });
+                        }
+
+                        response.FinalGrade.UpdateGrade(gradeValue, "Оцінено успішно");
+                    }
+                    else
+                    {
+                        teacher.GradeSubmission(response, gradeValue, "Оцінено успішно");
+                        _context.Add(response.FinalGrade);
+                    }
+
+                    if (response.Author is Student studentObject)
+                    {
+                        _notificationService.HandleGradeEvent(response.FinalGrade, studentObject);
+                    }
+
+                    TempData["Message"] = $"Успішно збережено! {response.FinalGrade.FormatFeedback()}";
                 }
-
-                teacher.GradeSubmission(response, gradeValue, "Оцінено");
-
-                _context.Add(response.FinalGrade);
+                catch (ArgumentException ex)
+                {
+                    TempData["Error"] = ex.Message;
+                    return RedirectToAction("TaskDetails", new { id = taskId, studentId = studentId });
+                }
             }
-
             else if (action == "Return")
             {
                 response.Status = SubmissionStatus.Rejected;
@@ -983,6 +1170,7 @@ namespace Platform.Controllers
                     _context.Grades.Remove(response.FinalGrade);
                     response.FinalGrade = null;
                 }
+                TempData["Message"] = "Роботу повернуто студенту на доопрацювання.";
             }
 
             await _context.SaveChangesAsync();
@@ -1002,17 +1190,33 @@ namespace Platform.Controllers
                 .FirstOrDefaultAsync(r => r.TargetTask.Id == taskId && r.Author.Id == userId);
 
             if (response == null) return NotFound();
-
             var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
-            var savedFile = await _fileManager.SaveFileAsync(file, currentUser!);
-            if (savedFile != null)
+            var tempFileModel = new FileModel(file.FileName, file.Length, currentUser!);
+            string[] allowedExtensions = { ".pdf", ".docx", ".zip", ".png", ".jpg" };
+
+            if (!tempFileModel.Validate(_fileManager.MaxFileSize, allowedExtensions))
             {
-                _context.Files.Add(savedFile);
-                response.ModifyFiles(savedFile, true);
+                TempData["Error"] = "Файл перевищує допустимий розмір або має незареєстроване розширення!";
+                return RedirectToAction("TaskDetails", new { id = taskId });
             }
 
-            await _context.SaveChangesAsync();
+            try
+            {
+                var savedFile = await _fileManager.SaveFileAsync(file, currentUser!);
+                if (savedFile != null)
+                {
+                    _context.Files.Add(savedFile);
+                    response.ModifyFiles(savedFile, true);
+                    response.RefreshStatus();
+                    await _context.SaveChangesAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = ex.Message;
+            }
+
             return RedirectToAction("TaskDetails", new { id = taskId });
         }
 
@@ -1034,13 +1238,42 @@ namespace Platform.Controllers
             if (fileToRemove != null)
             {
                 response.ModifyFiles(fileToRemove, false);
+                response.RefreshStatus();
+
+                _fileManager.DeleteFile(fileToRemove.LocalPath);
 
                 _context.Files.Remove(fileToRemove);
-
                 await _context.SaveChangesAsync();
             }
 
             return RedirectToAction("TaskDetails", new { id = taskId });
+        }
+
+        [Authorize(Roles = "Student")]
+        [HttpPost]
+        public async Task<IActionResult> Leave(Guid id)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid.TryParse(userIdStr, out Guid userId);
+
+            var student = await _context.Users.OfType<Student>()
+                .Include(s => s.EnrolledCourses)
+                .FirstOrDefaultAsync(s => s.Id == userId);
+
+            var course = await _context.Courses
+                .Include(c => c.Students)
+                .FirstOrDefaultAsync(c => c.Id == id);
+
+            if (student == null || course == null) return NotFound();
+
+            student.Unenroll(course);
+
+            _notificationService.NotifyEnrollmentChange(student, course, "excluded");
+
+            await _context.SaveChangesAsync();
+
+            TempData["Message"] = $"Ви успішно покинули курс '{course.Title}'.";
+            return RedirectToAction("MyCourses", "Home");
         }
     }
 }

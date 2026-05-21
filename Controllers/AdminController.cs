@@ -1,10 +1,12 @@
 ﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Platform.Data;
 using Platform.Enums;
 using Platform.Models;
 using Platform.Models.ViewModels;
+using Platform.Services;
 using System;
 using System.Linq;
 using System.Security.Claims;
@@ -12,29 +14,27 @@ using System.Threading.Tasks;
 
 namespace Platform.Controllers
 {
-    // ТІЛЬКИ ДЛЯ АДМІНІВ
     [Authorize(Roles = "Admin")]
     public class AdminController : Controller
     {
         private readonly PlatformDbContext _context;
+        private readonly FileManager _fileManager;
 
-        public AdminController(PlatformDbContext context)
+        public AdminController(PlatformDbContext context, FileManager fileManager)
         {
             _context = context;
+            _fileManager = fileManager;
         }
 
-        // Перенаправлення на вкладку курсів за замовчуванням
         [HttpGet]
         public IActionResult Index()
         {
             return RedirectToAction("Courses");
         }
 
-        // ================= 1. ВКЛАДКА КУРСІВ =================
         [HttpGet]
         public async Task<IActionResult> Courses(string searchString, string sortOrder)
         {
-            // Беремо ВСІ курси (навіть приватні)
             var query = from c in _context.Courses
                         join u in _context.Users on c.OwnerId equals u.Id
                         select new CourseCardViewModel
@@ -166,6 +166,24 @@ namespace Platform.Controllers
                 await _context.SaveChangesAsync();
             }
             return RedirectToAction("Users");
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        public IActionResult TriggerStorageCleanup()
+        {
+            try
+            {
+                _fileManager.CleanOrphanedFiles(_context);
+
+                TempData["Message"] = "Очищення дискового простору успішно завершено!";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Помилка під час очищення: {ex.Message}";
+            }
+
+            return RedirectToAction("Index");
         }
     }
 }

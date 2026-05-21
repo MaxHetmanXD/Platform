@@ -63,7 +63,7 @@ namespace Platform.Models
 
         public void Submit()
         {
-            Status = SubmissionStatus.Pending;
+            Status = SubmissionStatus.Rejected;
             OnSubmitted?.Invoke(this, this);
         }
 

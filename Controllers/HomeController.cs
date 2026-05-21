@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Platform.Data;
+using Platform.Models;
 using Platform.Models.ViewModels;
 using System.Linq;
 using System.Security.Claims;
@@ -21,36 +22,74 @@ namespace Platform.Controllers
         [HttpGet]
         public async Task<IActionResult> Index(string searchString, string sortOrder)
         {
-            var query = from c in _context.Courses
-                        where c.IsPublic == true
-                        join u in _context.Users on c.OwnerId equals u.Id
-                        select new CourseCardViewModel
-                        {
-                            Id = c.Id,
-                            Title = c.Title,
-                            CategoryName = c.Category.ToString(),
-                            StudentsCount = c.Students.Count,
-                            OwnerNickname = u.Nickname,
-                            BannerId = c.Banner != null ? c.Banner.Id : null
-                        };
+            var courses = await _context.Courses
+                .Include(c => c.Owner)
+                .Include(c => c.Banner)
+                .Include(c => c.Students)
+                .ToListAsync();
+
+            if (!User.Identity.IsAuthenticated)
+            {
+                var guest = new Guest();
+                courses = guest.BrowseCourses(courses, null);
+            }
+            else
+            {
+                courses = courses.Where(c => c.IsPublic == true).ToList();
+            }
 
             if (!string.IsNullOrWhiteSpace(searchString))
             {
-                query = query.Where(c => c.Title.Contains(searchString));
+                courses = courses
+                    .Where(c => c.MatchSearch(searchString))
+                    .OrderByDescending(c => c.GetSearchWeight(searchString))
+                    .ToList();
             }
 
-            query = sortOrder switch
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            Guid.TryParse(userIdStr, out Guid userId);
+
+            var viewModels = courses.Select(c => {
+                var vm = new CourseCardViewModel
+                {
+                    Id = c.Id,
+                    Title = c.Title,
+                    CategoryName = c.Category.ToString(),
+                    OwnerNickname = c.Owner?.Nickname ?? "Невідомий",
+                    StudentsCount = c.Students.Count,
+                    BannerId = c.Banner?.Id,
+                    IsTeacherView = (userRole == "Teacher")
+                };
+
+                if (userRole == "Student")
+                {
+                    var student = c.Students.FirstOrDefault(s => s.Id == userId);
+                    vm.AverageGrade = student != null ? ((Student)student).GetCourseAverage(c) : 0;
+                }
+                else if (userRole == "Teacher")
+                {
+                    vm.AverageGrade = c.GetGlobalAverage();
+                }
+
+                return vm;
+            }).ToList();
+
+            if (string.IsNullOrWhiteSpace(searchString))
             {
-                "popularity" => query.OrderByDescending(c => c.StudentsCount),
-                "category" => query.OrderBy(c => c.CategoryName),
-                _ => query.OrderBy(c => c.Title)
-            };
+                viewModels = sortOrder switch
+                {
+                    "popularity" => viewModels.OrderByDescending(c => c.StudentsCount).ToList(),
+                    "category" => viewModels.OrderBy(c => c.CategoryName).ToList(),
+                    "grade" => viewModels.OrderByDescending(c => c.AverageGrade).ToList(),
+                    _ => viewModels.OrderBy(c => c.Title).ToList()
+                };
+            }
 
             ViewData["CurrentSearch"] = searchString;
             ViewData["CurrentSort"] = sortOrder;
 
-            var courses = await query.ToListAsync();
-            return View(courses);
+            return View(viewModels);
         }
 
         [Authorize(Roles = "Student,Teacher")]

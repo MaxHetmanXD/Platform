@@ -79,7 +79,7 @@
                     <div class="d-flex mb-4 gap-2 border-bottom pb-3">
                         <a asp-action="Details" asp-route-id="@Model.Id" class="btn btn-primary fw-bold">Курс</a>
                         
-                        @if (!Model.IsGuest)
+                        @if (Model.IsUserEnrolled || Model.IsOwnerOrAdmin)
                         {
                             <a asp-action="Lessons" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Уроки</a>
                             <a asp-action="Grades" asp-route-id="@Model.Id" class="btn btn-outline-secondary">Оцінки</a>
@@ -142,6 +142,12 @@
                                         else if (Model.IsUserEnrolled)
                                         {
                                             <button class="btn btn-success w-100 fw-bold mt-2" disabled><i class="bi bi-check-lg"></i> Ви є учасником</button>
+                                            <form asp-action="Leave" method="post" onsubmit="return confirm('Ви дійсно хочете покинути цей курс?');">
+                                                <input type="hidden" name="id" value="@Model.Id" />
+                                                <button type="submit" class="btn btn-outline-danger w-100 fw-bold mt-2">
+                                                    <i class="bi bi-box-arrow-right"></i> Покинути курс
+                                                </button>
+                                            </form>
                                         }
                                         else if (Model.IsUserPending)
                                         {

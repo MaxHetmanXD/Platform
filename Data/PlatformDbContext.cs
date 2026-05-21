@@ -59,6 +59,16 @@ namespace Platform.Data
                 .WithMany(c => c.Lessons)
                 .HasForeignKey(l => l.CourseId);
 
+            modelBuilder.Entity<Lesson>()
+                .HasMany(l => l.AllowedStudents)
+                .WithMany()
+                .UsingEntity(j => j.ToTable("LessonAllowedStudents"));
+
+            modelBuilder.Entity<Platform.Models.Task>()
+                .HasMany(t => t.AllowedStudents)
+                .WithMany()
+                .UsingEntity(j => j.ToTable("TaskAllowedStudents"));
+
             modelBuilder.Entity<User>()
                 .HasIndex(u => u.Login)
                 .IsUnique();

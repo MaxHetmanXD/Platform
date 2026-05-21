@@ -38,12 +38,20 @@ namespace Platform.Models
             Title = newTitle;
             TheoryContent = newTheory;
 
-            Attachments = newMaterials ?? new List<FileModel>();
+            Attachments.Clear();
+            if (newMaterials != null)
+            {
+                Attachments.AddRange(newMaterials);
+            }
         }
 
         public void SetAccessibility(List<Student> students)
         {
-            AllowedStudents = students ?? new List<Student>();
+            AllowedStudents.Clear();
+            if (students != null)
+            {
+                AllowedStudents.AddRange(students);
+            }
         }
 
         public void AddTask(Task task)

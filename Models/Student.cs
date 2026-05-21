@@ -58,6 +58,19 @@ namespace Platform.Models
             return response;
         }
 
+        public void SubmitTask(StudentResponse response)
+        {
+            if (!response.TargetTask.IsVisible)
+            {
+                throw new InvalidOperationException("Це завдання наразі недоступне.");
+            }
+
+            response.Submit();
+            response.RefreshStatus();
+
+            OnTaskSubmitted?.Invoke(this, response);
+        }
+
         public double GetLessonAverage(Lesson lesson)
         {
             var gradedResponses = lesson.Tasks

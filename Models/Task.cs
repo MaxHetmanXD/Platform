@@ -50,7 +50,11 @@ namespace Platform.Models
 
         public void SetAccessibility(List<Student> students)
         {
-            AllowedStudents = students ?? new List<Student>();
+            AllowedStudents.Clear();
+            if (students != null)
+            {
+                AllowedStudents.AddRange(students);
+            }
         }
 
         public bool CheckSubmissionEligibility(Student student)

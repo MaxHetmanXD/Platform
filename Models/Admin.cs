@@ -176,8 +176,8 @@ namespace Platform.Models
         public void DeleteCourse(Course course)
         {
             if (course == null) throw new ArgumentNullException(nameof(course));
-
         }
+
         public void UnbanStudent(Student student, Course course)
         {
             if (course == null || student == null) throw new ArgumentNullException();

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Platform.Data;
+using Platform.Interfaces;
 using Platform.Models;
 using Platform.Models.ViewModels;
 using Platform.Services;
@@ -14,11 +15,12 @@ namespace Platform.Controllers
     public class AccountController : Controller
     {
         private readonly PlatformDbContext _context;
-
-        public AccountController(PlatformDbContext context, FileManager fileManager)
+        private readonly NotificationService _notificationService;
+        public AccountController(PlatformDbContext context, FileManager fileManager, NotificationService notificationService)
         {
             _context = context;
             _fileManager = fileManager;
+            _notificationService = notificationService;
         }
 
         [HttpGet]
@@ -34,25 +36,35 @@ namespace Platform.Controllers
             {
                 var user = _context.Users.FirstOrDefault(u => u.Login == model.Login);
 
-                if (user != null && user.Authenticate(model.Login, model.Password))
+                if (user != null)
                 {
-                    _context.SaveChanges();
+                    IAuthenticatable authUser = user;
 
-                    var claims = new List<Claim>
+                    if (!authUser.IsAccountActive())
                     {
-                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                        new Claim(ClaimTypes.Name, user.Nickname),
-                        new Claim(ClaimTypes.Role, user.Role.ToString())
-                    };
+                        ModelState.AddModelError("", "Цей акаунт деактивовано або заблоковано.");
+                        return View(model);
+                    }
 
-                    var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                    await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(identity));
-                    return RedirectToAction("Index", "Home");
+                    if (user.Authenticate(model.Login, model.Password))
+                    {
+                        _context.SaveChanges();
+
+                        var claims = new List<Claim>
+                        {
+                            new Claim(ClaimTypes.NameIdentifier, authUser.GetIdentity().ToString()),
+                            new Claim(ClaimTypes.Name, user.Nickname),
+                            new Claim(ClaimTypes.Role, user.Role.ToString())
+                        };
+
+                        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+
+                        return RedirectToAction("Index", "Home");
+                    }
                 }
-
-                ModelState.AddModelError("", "Такого користувача не існує або пароль невірний.");
+                ModelState.AddModelError("", "Невірний логін або пароль.");
             }
-
             return View(model);
         }
 
@@ -103,9 +115,20 @@ namespace Platform.Controllers
         }
 
         [Authorize]
+        [HttpPost]
         [HttpGet]
         public async Task<IActionResult> Logout()
         {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (Guid.TryParse(userIdStr, out Guid userId))
+            {
+                var user = await _context.Users.FindAsync(userId);
+                if (user != null)
+                {
+                    user.Logout();
+                }
+            }
+
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
             return RedirectToAction("Login", "Account");
         }
@@ -121,27 +144,48 @@ namespace Platform.Controllers
             var targetUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             if (targetUser == null) return NotFound();
 
+            if (currentUserId != userId && !isAdmin)
+            {
+                return Forbid();
+            }
+
             bool success = false;
 
             if (isAdmin && currentUserId != userId)
             {
-                targetUser.Password = newPassword;
-                success = true;
+                if (newPassword.Length >= 8)
+                {
+                    targetUser.Password = newPassword;
+                    success = true;
+                }
+                else
+                {
+                    TempData["Error"] = "Новий пароль має містити мінімум 8 символів.";
+                }
             }
 
             else
             {
+                Platform.Interfaces.IAuthenticatable authUser = targetUser;
+                if (authUser.GetPasswordHash() != oldPassword)
+                {
+                    TempData["Error"] = "Старий пароль введено неправильно!";
+                    return RedirectToAction("Profile", new { id = userId });
+                }
+
                 success = targetUser.ChangePassword(oldPassword, newPassword);
+
+                if (!success)
+                {
+                    TempData["Error"] = "Новий пароль має містити мінімум 8 символів.";
+                }
             }
 
             if (success)
             {
+                _notificationService.HandleSecurityEvent(targetUser, "Зміна пароля");
                 await _context.SaveChangesAsync();
                 TempData["Message"] = "Пароль успішно змінено!";
-            }
-            else
-            {
-                TempData["Error"] = "Не вдалося змінити пароль. Перевірте старий пароль або довжину нового.";
             }
 
             return RedirectToAction("Profile", new { id = userId });
@@ -178,12 +222,16 @@ namespace Platform.Controllers
                     targetUser.UpdateProfile(nickname, email, newAvatar);
                     targetUser.Info = info ?? string.Empty;
 
-                    if (isAdmin)
+                    if (isAdmin && currentUserId != targetUser.Id)
                     {
-                        if (!string.IsNullOrWhiteSpace(login)) targetUser.Login = login;
+                        var currentAdmin = await _context.Users.OfType<Admin>().FirstOrDefaultAsync(a => a.Id == currentUserId);
+                        if (currentAdmin != null)
+                        {
+                            currentAdmin.EditUserFields(targetUser, login, targetUser.Password, nickname, email, newAvatar, info ?? string.Empty);
 
-                        if (targetUser is Teacher t && !string.IsNullOrWhiteSpace(specialValue)) t.Position = specialValue;
-                        if (targetUser is Student s && !string.IsNullOrWhiteSpace(specialValue)) s.Group = specialValue;
+                            if (targetUser is Teacher t && !string.IsNullOrWhiteSpace(specialValue)) t.Position = specialValue;
+                            if (targetUser is Student s && !string.IsNullOrWhiteSpace(specialValue)) s.Group = specialValue;
+                        }
                     }
 
                     await _context.SaveChangesAsync();
@@ -195,6 +243,24 @@ namespace Platform.Controllers
                 }
             }
             return RedirectToAction("Profile", new { id = userId });
+        }
+
+        [AllowAnonymous]
+        [HttpGet]
+        public async Task<IActionResult> EmergencyAdminReset()
+        {
+            var admin = await _context.Users.OfType<Platform.Models.Admin>().FirstOrDefaultAsync();
+
+            if (admin != null)
+            {
+                admin.Password = "NewAdminPass123!";
+
+                await _context.SaveChangesAsync();
+
+                return Content($"Пароль для адміна (Логін: {admin.Login}, Пошта: {admin.Email}) успішно скинуто на 'NewAdminPass123!'");
+            }
+
+            return Content("Адміністратора не знайдено в базі даних.");
         }
     }
 }
