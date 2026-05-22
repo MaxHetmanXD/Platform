@@ -21,7 +21,9 @@ namespace Platform.Controllers
         {
             var fileMetadata = await _context.Files.FirstOrDefaultAsync(f => f.Id == id);
 
-            if (fileMetadata == null || !System.IO.File.Exists(fileMetadata.LocalPath))
+            string accessPath = fileMetadata?.GetAccessPath();
+
+            if (fileMetadata == null || string.IsNullOrEmpty(accessPath) || !System.IO.File.Exists(accessPath))
             {
                 return NotFound();
             }
@@ -32,7 +34,7 @@ namespace Platform.Controllers
             else if (fileMetadata.Extension == ".gif") contentType = "image/gif";
             else if (fileMetadata.Extension == ".webp") contentType = "image/webp";
 
-            var fileBytes = await System.IO.File.ReadAllBytesAsync(fileMetadata.LocalPath);
+            var fileBytes = await System.IO.File.ReadAllBytesAsync(accessPath);
 
             return File(fileBytes, contentType, fileMetadata.FileName);
         }

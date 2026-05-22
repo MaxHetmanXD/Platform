@@ -72,7 +72,7 @@
 
                     <form asp-action="Participants" method="get" class="mb-5">
                         <input type="hidden" name="id" value="@Model.CourseId" />
-                        <div class="input-group w-50">
+                        <div class="input-group">
                             <span class="input-group-text bg-white border-end-0"><i class="bi bi-search"></i></span>
                             <input type="text" name="searchString" class="form-control border-start-0" placeholder="Пошук за ім'ям або групою..." value="@ViewData["CurrentSearch"]">
                             <button type="submit" class="btn btn-outline-secondary">Шукати</button>
@@ -80,7 +80,7 @@
                     </form>
 
                     <h5 class="mb-3 text-primary"><i class="bi bi-person-video3"></i> Власник курсу</h5>
-                    <div class="user-list-item d-flex align-items-center mb-5 w-50" style="cursor: pointer;" onclick="location.href='/Account/Profile/@Model.Owner.Id'">
+                    <div class="user-list-item d-flex align-items-center mb-5" style="cursor: pointer;" onclick="location.href='/Account/Profile/@Model.Owner.Id'">
                         @if (Model.Owner.AvatarId != null) { <img src="/Files/Download?id=@Model.Owner.AvatarId" class="mini-avatar" /> }
                         else { <div class="mini-avatar-placeholder"><i class="bi bi-person"></i></div> }
                         <div class="ms-3">
@@ -90,7 +90,7 @@
                     </div>
 
                     <h5 class="mb-3 text-success"><i class="bi bi-mortarboard"></i> Учасники курсу (@Model.EnrolledStudents.Count)</h5>
-                    <div class="row row-cols-1 row-cols-md-2 g-3 mb-5">
+                    <div class="row row-cols-1 g-3 mb-5">
                         @foreach(var student in Model.EnrolledStudents) {
                             <div class="col">
                                 <div class="user-list-item d-flex align-items-center">
@@ -120,7 +120,7 @@
                         <hr class="my-5" />
 
                         <h5 class="mb-3 text-warning"><i class="bi bi-hourglass-split"></i> Заявки на вступ (@Model.PendingStudents.Count)</h5>
-                        <div class="row row-cols-1 row-cols-md-2 g-3 mb-5">
+                        <div class="row row-cols-1 g-3 mb-5">
                             @foreach(var student in Model.PendingStudents) {
                                 <div class="col">
                                     <div class="user-list-item d-flex align-items-center bg-white border-warning">
@@ -145,7 +145,7 @@
                         </div>
 
                         <h5 class="mb-3 text-danger"><i class="bi bi-slash-circle"></i> Забанені студенти (@Model.BannedStudents.Count)</h5>
-                        <div class="row row-cols-1 row-cols-md-2 g-3">
+                        <div class="row row-cols-1 g-3">
                             @foreach(var student in Model.BannedStudents) {
                                 <div class="col">
                                     <div class="user-list-item d-flex align-items-center bg-white border-danger">
