@@ -176,6 +176,14 @@ namespace Platform.Controllers
                 if (newBanner != null) _context.Files.Add(newBanner);
             }
 
+            bool nameExists = await _context.Courses.AnyAsync(c => c.Title.ToLower() == model.Title.ToLower() && c.Id != model.Id);
+            if (nameExists)
+            {
+                TempData["Error"] = "Курс із такою назвою вже існує. Оберіть іншу.";
+
+                return View("Manage", model);
+            }
+
             if (isAdmin)
             {
                 ((Admin)currentUser!).EditCourse(course, model.Title, model.Description, newBanner, model.Category, model.Pass);

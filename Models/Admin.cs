@@ -1,6 +1,7 @@
-﻿using System;
+﻿using Platform.Enums;
+using Platform.Interfaces;
+using System;
 using System.Collections.Generic;
-using Platform.Enums;
 
 namespace Platform.Models
 {
@@ -157,13 +158,9 @@ namespace Platform.Models
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
 
-            if (target is Lesson lesson)
+            if (target is IAccessible accessibleTarget)
             {
-                lesson.SetAccessibility(allowedStudents);
-            }
-            else if (target is Task task)
-            {
-                task.SetAccessibility(allowedStudents);
+                accessibleTarget.SetAccessibility(allowedStudents);
             }
             else
             {

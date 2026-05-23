@@ -70,6 +70,11 @@ namespace Platform.Models
         {
             if (BannedStudents.Contains(student)) return false;
 
+            if (BannedStudents.Any(s => s.Id == student.Id))
+            {
+                throw new InvalidOperationException("Ви заблоковані на цьому курсі і не можете приєднатися.");
+            }
+
             if (!IsPublic && !VerifyCoursePassword(password ?? ""))
             {
                 return false;

@@ -8,7 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Platform.Models
 {
-    public class Task : IAttachable
+    public class Task : IAttachable, IAccessible
     {
         public Guid Id { get; private set; } = Guid.NewGuid();
         public Guid LessonId { get; set; }

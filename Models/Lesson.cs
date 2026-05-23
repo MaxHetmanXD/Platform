@@ -7,7 +7,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Platform.Models
 {
-    public class Lesson : IAttachable
+    public class Lesson : IAttachable, IAccessible
     {
         public Guid Id { get; private set; } = Guid.NewGuid();
 

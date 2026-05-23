@@ -57,6 +57,13 @@
                 {
                     <div class="alert alert-success"><i class="bi bi-check-circle"></i> @TempData["Message"]</div>
                 }
+                @if (TempData["Error"] != null)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show shadow-sm" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i> @TempData["Error"]
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                }
 
                 <div class="manage-card">
                     <form asp-action="Manage" method="post" enctype="multipart/form-data">
