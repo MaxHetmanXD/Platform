@@ -89,7 +89,8 @@ namespace Platform.Controllers
                 Login = u.Login,
                 Role = u.Role,
                 LastLogin = u.LastLogin,
-                SpecialField = u is Student s ? s.Group : (u is Teacher t ? t.Position : "")
+                SpecialField = u is Student s ? s.Group : (u is Teacher t ? t.Position : ""),
+                IsActive = u.IsActive
             }).ToList();
 
             userViewModels = sortOrder switch
@@ -132,7 +133,7 @@ namespace Platform.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> DeleteUser(Guid userId)
+        public async Task<IActionResult> ToggleUserStatus(Guid userId)
         {
             var adminIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             Guid.TryParse(adminIdStr, out Guid adminId);
@@ -142,9 +143,17 @@ namespace Platform.Controllers
 
             if (currentAdmin != null && targetUser != null)
             {
-                currentAdmin.DeleteUser(targetUser);
+                if (targetUser.IsActive)
+                {
+                    currentAdmin.BlockUser(targetUser);
+                    TempData["Warning"] = $"Акаунт користувача '{targetUser.Nickname}' заблоковано.";
+                }
+                else
+                {
+                    currentAdmin.UnblockUser(targetUser);
+                    TempData["Message"] = $"Акаунт користувача '{targetUser.Nickname}' розблоковано. Доступ відновлено.";
+                }
 
-                _context.Users.Remove(targetUser);
                 await _context.SaveChangesAsync();
             }
             return RedirectToAction("Users");

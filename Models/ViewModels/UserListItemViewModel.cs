@@ -11,5 +11,6 @@ namespace Platform.Models.ViewModels
         public UserRole Role { get; set; }
         public string SpecialField { get; set; } = string.Empty;
         public DateTime LastLogin { get; set; }
+        public bool IsActive { get; set; }
     }
 }

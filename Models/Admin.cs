@@ -58,16 +58,24 @@ namespace Platform.Models
             );
         }
 
-        public bool DeleteUser(User target)
+        public bool BlockUser(User target)
         {
             if (target == null) return false;
 
             if (target.Role == UserRole.Admin && target.Id != this.Id)
             {
-                throw new UnauthorizedAccessException("Адміністратор не може видалити іншого адміністратора.");
+                throw new UnauthorizedAccessException("Адміністратор не може заблокувати іншого адміністратора.");
             }
 
             target.IsActive = false;
+            return true;
+        }
+
+        public bool UnblockUser(User target)
+        {
+            if (target == null) return false;
+
+            target.IsActive = true;
             return true;
         }
 

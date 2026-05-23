@@ -69,9 +69,21 @@
                         <h5 class="mb-3 text-primary"><i class="bi bi-person-video3"></i> Вчителі</h5>
                         @foreach (var teacher in Model.Where(u => u.Role == UserRole.Teacher))
                         {
-                            <div class="user-list-item d-flex align-items-center">
+                            <div class="user-list-item d-flex align-items-center @(teacher.IsActive ? "" : "bg-light opacity-75")">
                                 <div class="flex-grow-1" style="cursor: pointer;" onclick="location.href='/Account/Profile/@teacher.Id'">
-                                    <h6 class="mb-1">@teacher.Nickname <span class="badge bg-light text-dark ms-2 border">@teacher.SpecialField</span></h6>
+                                    <h6 class="mb-1">
+                                        @if(!teacher.IsActive) 
+                                        { 
+                                            <i class="bi bi-lock-fill text-danger me-1" title="Заблоковано"></i> 
+                                        }
+                                        @teacher.Nickname 
+                                        <span class="badge bg-light text-dark ms-2 border">@teacher.SpecialField</span>
+                                        
+                                        @if(!teacher.IsActive) 
+                                        { 
+                                            <span class="badge bg-danger ms-1">Заблоковано</span> 
+                                        }
+                                    </h6>
                                     <small class="text-muted"><i class="bi bi-person-badge"></i> @teacher.Login | Вхід: @teacher.LastLogin.ToString("dd.MM.yyyy")</small>
                                 </div>
                                 
@@ -83,9 +95,16 @@
                                         <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile" asp-route-id="@teacher.Id"><i class="bi bi-pencil me-2"></i> Редагувати профіль</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <form asp-action="DeleteUser" method="post" onsubmit="return confirm('Ви впевнені, що хочете ВИДАЛИТИ цього користувача? Це незворотня дія.');">
+                                            <form asp-action="ToggleUserStatus" method="post" onsubmit="return confirm('@(teacher.IsActive ? "Ви впевнені, що хочете заблокувати цього користувача? Він втратить доступ до системи." : "Розблокувати користувача?")');">
                                                 <input type="hidden" name="userId" value="@teacher.Id" />
-                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i> Видалити</button>
+                                                @if(teacher.IsActive) 
+                                                {
+                                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-lock-fill me-2"></i> Заблокувати</button>
+                                                } 
+                                                else 
+                                                {
+                                                    <button type="submit" class="dropdown-item text-success"><i class="bi bi-unlock-fill me-2"></i> Розблокувати</button>
+                                                }
                                             </form>
                                         </li>
                                     </ul>
@@ -98,9 +117,21 @@
                         <h5 class="mb-3 text-success"><i class="bi bi-mortarboard"></i> Студенти</h5>
                         @foreach (var student in Model.Where(u => u.Role == UserRole.Student))
                         {
-                            <div class="user-list-item d-flex align-items-center">
+                            <div class="user-list-item d-flex align-items-center @(student.IsActive ? "" : "bg-light opacity-75")">
                                 <div class="flex-grow-1" style="cursor: pointer;" onclick="location.href='/Account/Profile/@student.Id'">
-                                    <h6 class="mb-1">@student.Nickname <span class="badge bg-light text-dark ms-2 border">@student.SpecialField</span></h6>
+                                    <h6 class="mb-1">
+                                        @if(!student.IsActive) 
+                                        { 
+                                            <i class="bi bi-lock-fill text-danger me-1" title="Заблоковано"></i> 
+                                        }
+                                        @student.Nickname 
+                                        <span class="badge bg-light text-dark ms-2 border">@student.SpecialField</span>
+                                        
+                                        @if(!student.IsActive) 
+                                        { 
+                                            <span class="badge bg-danger ms-1">Заблоковано</span> 
+                                        }
+                                    </h6>
                                     <small class="text-muted"><i class="bi bi-person-badge"></i> @student.Login | Вхід: @student.LastLogin.ToString("dd.MM.yyyy")</small>
                                 </div>
                                 
@@ -112,9 +143,16 @@
                                         <li><a class="dropdown-item" asp-controller="Account" asp-action="Profile" asp-route-id="@student.Id"><i class="bi bi-pencil me-2"></i> Редагувати профіль</a></li>
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <form asp-action="DeleteUser" method="post" onsubmit="return confirm('Ви впевнені, що хочете ВИДАЛИТИ цього користувача? Це незворотня дія.');">
+                                            <form asp-action="ToggleUserStatus" method="post" onsubmit="return confirm('@(student.IsActive ? "Ви впевнені, що хочете заблокувати цього користувача? Він втратить доступ до системи." : "Розблокувати користувача?")');">
                                                 <input type="hidden" name="userId" value="@student.Id" />
-                                                <button type="submit" class="dropdown-item text-danger"><i class="bi bi-trash me-2"></i> Видалити</button>
+                                                @if(student.IsActive) 
+                                                {
+                                                    <button type="submit" class="dropdown-item text-danger"><i class="bi bi-lock-fill me-2"></i> Заблокувати</button>
+                                                } 
+                                                else 
+                                                {
+                                                    <button type="submit" class="dropdown-item text-success"><i class="bi bi-unlock-fill me-2"></i> Розблокувати</button>
+                                                }
                                             </form>
                                         </li>
                                     </ul>
