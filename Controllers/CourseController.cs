@@ -176,12 +176,14 @@ namespace Platform.Controllers
                 if (newBanner != null) _context.Files.Add(newBanner);
             }
 
-            if (isAdmin) ((Admin)currentUser!).EditCourse(course, model.Title, model.Description, newBanner);
-            else ((Teacher)currentUser!).EditCourse(course, model.Title, model.Description, newBanner);
-
-            course.Category = model.Category;
-            course.Pass = model.Pass;
-            course.IsPublic = string.IsNullOrWhiteSpace(model.Pass);
+            if (isAdmin)
+            {
+                ((Admin)currentUser!).EditCourse(course, model.Title, model.Description, newBanner, model.Category, model.Pass);
+            }
+            else
+            {
+                ((Teacher)currentUser!).EditCourse(course, model.Title, model.Description, newBanner, model.Category, model.Pass);
+            }
 
             await _context.SaveChangesAsync();
             TempData["Message"] = "Налаштування курсу успішно збережено!";
@@ -478,19 +480,11 @@ namespace Platform.Controllers
             if (isAdmin) newLesson = ((Admin)currentUser!).CreateLesson(course, $"Новий урок {randomId}", "Опис вашого уроку...");
             else newLesson = ((Teacher)currentUser!).CreateLesson(course, $"Новий урок {randomId}", "Опис вашого уроку...");
 
-            newLesson.IsPublic = true;
-            newLesson.SetAccessibility(course.Students.ToList());
+            newLesson.IsPublic = false;
+            newLesson.SetAccessibility(new List<Student>());
 
             course.AddLesson(newLesson);
             _context.Lessons.Add(newLesson);
-
-            if (course.Students != null)
-            {
-                foreach (var student in course.Students)
-                {
-                    _notificationService.Send(student, "Новий урок", $"На курсі '{course.Title}' з'явився новий урок!");
-                }
-            }
 
             await _context.SaveChangesAsync();
             return RedirectToAction("Lesson", new { id = newLesson.Id });
@@ -604,7 +598,11 @@ namespace Platform.Controllers
                 foreach (var file in newFiles)
                 {
                     var tempFileModel = new FileModel(file.FileName, file.Length, currentUser!);
-                    if (!tempFileModel.Validate(_fileManager.MaxFileSize, allowedExtensions)) continue;
+                    if (!tempFileModel.Validate(_fileManager.MaxFileSize, allowedExtensions))
+                    {
+                        TempData["Error"] = $"Файл '{file.FileName}' не завантажено: неприпустимий формат або перевищено ліміт розміру.";
+                        continue;
+                    }
 
                     try
                     {
@@ -621,7 +619,7 @@ namespace Platform.Controllers
 
             try
             {
-                lesson.UpdateContent(title, info ?? string.Empty, lesson.Attachments);
+                lesson.UpdateContent(title, info ?? string.Empty, lesson.Attachments.ToList());
             }
             catch (ArgumentException ex)
             {
@@ -629,22 +627,38 @@ namespace Platform.Controllers
                 return RedirectToAction("Lesson", new { id = lessonId });
             }
 
-            bool finalIsPublic = isPublic || (allowedStudentIds == null || !allowedStudentIds.Any());
+            bool finalIsPublic = isPublic;
 
-            List<Student> finalStudentsList;
-            if (!finalIsPublic && allowedStudentIds != null && allowedStudentIds.Any())
-            {
-                finalStudentsList = lesson.Course.Students.Where(s => allowedStudentIds.Contains(s.Id)).ToList();
-            }
-            else
+            List<Student> finalStudentsList = new List<Student>();
+            if (finalIsPublic)
             {
                 finalStudentsList = lesson.Course.Students.ToList();
+            }
+            else if (allowedStudentIds != null && allowedStudentIds.Any())
+            {
+                finalStudentsList = lesson.Course.Students.Where(s => allowedStudentIds.Contains(s.Id)).ToList();
             }
 
             if (isAdmin) ((Admin)currentUser!).EditLesson(lesson, lesson.Title, lesson.TheoryContent, finalIsPublic, finalStudentsList);
             else ((Teacher)currentUser!).EditLesson(lesson, lesson.Title, lesson.TheoryContent, finalIsPublic, finalStudentsList);
 
+            if (isAdmin)
+            {
+                var currentAdmin = currentUser as Admin;
+                currentAdmin?.SetAccessibility(lesson, finalStudentsList);
+            }
+            else
+            {
+                lesson.SetAccessibility(finalStudentsList);
+            }
+
             lesson.IsPublic = finalIsPublic;
+
+            if (finalStudentsList.Any())
+            {
+                _notificationService.NotifyNewContent(lesson.Course, lesson, finalStudentsList);
+            }
+
             await _context.SaveChangesAsync();
             return RedirectToAction("Lesson", new { id = lessonId });
         }
@@ -839,19 +853,11 @@ namespace Platform.Controllers
             if (isAdmin) newTask = ((Admin)currentUser!).CreateTask(lesson, $"Нове завдання {randomId}", "Опис...", 100, DateTime.Now.AddDays(7), new List<FileModel>());
             else newTask = ((Teacher)currentUser!).CreateTask(lesson, $"Нове завдання {randomId}", "Опис...", 100, DateTime.Now.AddDays(7), new List<FileModel>());
 
-            newTask.IsVisible = true;
-            newTask.SetAccessibility(lesson.Course.Students.ToList());
+            newTask.IsVisible = false;
+            newTask.SetAccessibility(new List<Student>());
 
             lesson.AddTask(newTask);
             _context.Tasks.Add(newTask);
-
-            if (lesson.Course.Students != null)
-            {
-                foreach (var student in lesson.Course.Students)
-                {
-                    _notificationService.Send(student, "Нове завдання", $"До уроку '{lesson.Title}' додано нове завдання!");
-                }
-            }
 
             await _context.SaveChangesAsync();
             return RedirectToAction("TaskDetails", new { id = newTask.Id });
@@ -889,11 +895,15 @@ namespace Platform.Controllers
 
             if (newFiles != null && newFiles.Any())
             {
-                string[] allowedExtensions = { ".pdf", ".docx", ".doc", ".zip", ".rar", ".png", ".jpg", ".txt" };
+                string[] allowedExtensions = { ".pdf", ".docx", ".doc", ".xls", ".xlsx", ".ppt", ".pptx", ".zip", ".rar", ".png", ".jpg", ".txt" };
                 foreach (var file in newFiles)
                 {
                     var tempFileModel = new FileModel(file.FileName, file.Length, currentUser!);
-                    if (!tempFileModel.Validate(_fileManager.MaxFileSize, allowedExtensions)) continue;
+                    if (!tempFileModel.Validate(_fileManager.MaxFileSize, allowedExtensions))
+                    {
+                        TempData["Error"] = $"Файл '{file.FileName}' не завантажено: неприпустимий формат або перевищено ліміт розміру.";
+                        continue;
+                    }
 
                     try
                     {
@@ -910,29 +920,44 @@ namespace Platform.Controllers
 
             DateTime finalDeadline = deadline ?? DateTime.MaxValue;
 
-            bool finalIsVisible = isVisible || (allowedStudentIds == null || !allowedStudentIds.Any());
+            bool finalIsVisible = isVisible;
             task.IsVisible = finalIsVisible;
 
-            List<Student> finalStudentsList;
-            if (!finalIsVisible && allowedStudentIds != null && allowedStudentIds.Any())
-            {
-                finalStudentsList = task.Lesson.Course.Students.Where(s => allowedStudentIds.Contains(s.Id)).ToList();
-            }
-            else
+            List<Student> finalStudentsList = new List<Student>();
+            if (finalIsVisible)
             {
                 finalStudentsList = task.Lesson.Course.Students.ToList();
             }
-
-            if (isAdmin)
+            else if (allowedStudentIds != null && allowedStudentIds.Any())
             {
-                ((Admin)currentUser!).EditTask(task, title, info, maxPoints, finalDeadline, task.Attachments);
-                var currentAdmin = currentUser as Admin;
-                currentAdmin?.SetAccessibility(task, finalStudentsList);
+                finalStudentsList = task.Lesson.Course.Students.Where(s => allowedStudentIds.Contains(s.Id)).ToList();
             }
-            else
+
+            try
             {
-                ((Teacher)currentUser!).EditTask(task, title, info, maxPoints, finalDeadline, task.Attachments);
-                task.SetAccessibility(finalStudentsList);
+                if (isAdmin)
+                {
+                    ((Admin)currentUser!).EditTask(task, title, info ?? string.Empty, maxPoints, deadline, task.Attachments.ToList());
+
+                    var currentAdmin = currentUser as Admin;
+                    currentAdmin?.SetAccessibility(task, finalStudentsList);
+                }
+                else
+                {
+                    ((Teacher)currentUser!).EditTask(task, title, info ?? string.Empty, maxPoints, deadline, task.Attachments.ToList());
+
+                    task.SetAccessibility(finalStudentsList);
+                }
+            }
+            catch (ArgumentException ex)
+            {
+                TempData["Error"] = ex.Message;
+                return RedirectToAction("TaskDetails", new { id = taskId });
+            }
+
+            if (finalStudentsList.Any())
+            {
+                _notificationService.NotifyNewContent(task.Lesson.Course, task, finalStudentsList);
             }
 
             await _context.SaveChangesAsync();
@@ -1193,7 +1218,7 @@ namespace Platform.Controllers
             var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
             var tempFileModel = new FileModel(file.FileName, file.Length, currentUser!);
-            string[] allowedExtensions = { ".pdf", ".docx", ".zip", ".png", ".jpg" };
+            string[] allowedExtensions = { ".pdf", ".docx", ".doc", ".xls", ".xlsx", ".ppt", ".pptx", ".zip", ".rar", ".png", ".jpg", ".txt" };
 
             if (!tempFileModel.Validate(_fileManager.MaxFileSize, allowedExtensions))
             {

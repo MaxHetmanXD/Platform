@@ -40,6 +40,26 @@ namespace Platform.Models
             Description = string.Empty;
         }
 
+        public void UpdateCourseInfo(string title, string description, FileModel? banner, CourseCategory category, string? pass)
+        {
+            if (string.IsNullOrWhiteSpace(title))
+            {
+                throw new ArgumentException("Назва курсу не може бути порожньою.");
+            }
+
+            Title = title;
+            Description = description ?? string.Empty;
+
+            Category = category;
+            Pass = pass;
+            IsPublic = string.IsNullOrWhiteSpace(pass);
+
+            if (banner != null)
+            {
+                Banner = banner;
+            }
+        }
+
         public bool VerifyCoursePassword(string inputPassword)
         {
             if (IsPublic) return true;

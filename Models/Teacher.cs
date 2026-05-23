@@ -40,103 +40,76 @@ namespace Platform.Models
             return course;
         }
 
-        public void EditCourse(Course course, string title, string desc, FileModel? banner)
+        public void EditCourse(Course course, string title, string desc, FileModel? banner, CourseCategory category, string? pass)
         {
+            if (course == null) throw new ArgumentNullException(nameof(course));
+
             if (course.OwnerId != this.Id)
             {
                 throw new UnauthorizedAccessException("Ви не є власником цього курсу.");
             }
 
-            course.Title = title;
-            course.Description = desc;
-            if (banner != null)
-            {
-                course.Banner = banner;
-            }
+            course.UpdateCourseInfo(title, desc, banner, category, pass);
         }
 
         public void AcceptStudent(Student student, Course course)
         {
-            if (course.PendingStudents.Contains(student))
-            {
-                course.PendingStudents.Remove(student);
-                course.Students.Add(student);
-                student.EnrolledCourses.Add(course);
-            }
+            course.ActivateStudent(student);
+            if (!student.EnrolledCourses.Contains(course)) student.EnrolledCourses.Add(course);
         }
 
         public void BanStudent(Student student, Course course)
         {
-            course.Students.Remove(student);
-            course.PendingStudents.Remove(student);
-
-            if (!course.BannedStudents.Contains(student))
-            {
-                course.BannedStudents.Add(student);
-            }
-
-            student.EnrolledCourses.Remove(course);
+            course.AddToBanList(student);
+            student.Unenroll(course);
         }
 
         public void RemoveStudent(Student student, Course course)
         {
-            course.Students.Remove(student);
-            student.EnrolledCourses.Remove(course);
+            course.ExcludeStudent(student);
+            student.Unenroll(course);
         }
 
         public Lesson CreateLesson(Course course, string title, string text)
         {
             if (course.OwnerId != this.Id) throw new UnauthorizedAccessException("Ви не власник цього курсу.");
             var lesson = new Lesson { Title = title, TheoryContent = text, Course = course, IsPublic = true };
-            course.Lessons.Add(lesson);
+
+            course.AddLesson(lesson);
             return lesson;
         }
 
         public void EditLesson(Lesson lesson, string title, string text, bool isPublic, List<Student> allowedStudents)
         {
-            lesson.Title = title;
-            lesson.TheoryContent = text;
+            lesson.UpdateContent(title, text, lesson.Attachments);
             lesson.IsPublic = isPublic;
-
-            lesson.AllowedStudents.Clear();
-            if (!isPublic && allowedStudents != null)
-            {
-                lesson.AllowedStudents.AddRange(allowedStudents);
-            }
+            lesson.SetAccessibility(allowedStudents);
         }
 
         public void DeleteLesson(Course course, Lesson lesson)
         {
             if (course.OwnerId != this.Id) throw new UnauthorizedAccessException();
-            course.Lessons.Remove(lesson);
-        }
 
+            course.RemoveLesson(lesson);
+        }
         public Task CreateTask(Lesson lesson, string title, string theory, int maxPoints, DateTime deadline, List<FileModel> files)
         {
-            var task = new Task
-            {
-                Title = title,
-                TheoryContent = theory,
-                MaxPoints = maxPoints,
-                Deadline = deadline,
-                Attachments = files ?? new List<FileModel>()
-            };
-            lesson.Tasks.Add(task);
+            var task = new Task();
+            task.UpdateTaskInfo(title, theory, maxPoints, deadline, files);
+
+            lesson.AddTask(task);
             return task;
         }
 
-        public void EditTask(Task task, string title, string theory, int maxPoints, DateTime deadline, List<FileModel> files)
+        public void EditTask(Task task, string title, string theory, int maxPoints, DateTime? deadline, List<FileModel> files)
         {
-            task.Title = title;
-            task.TheoryContent = theory;
-            task.MaxPoints = maxPoints;
-            task.Deadline = deadline;
-            task.Attachments = files ?? new List<FileModel>();
+            if (task == null) throw new ArgumentNullException(nameof(task));
+            task.UpdateTaskInfo(title, theory, maxPoints, deadline, files);
         }
 
         public void DeleteTask(Lesson lesson, Task task)
         {
-            lesson.Tasks.Remove(task);
+            lesson.RemoveTask(task);
         }
 
         public Grade GradeSubmission(StudentResponse resp, int score, string feedback)

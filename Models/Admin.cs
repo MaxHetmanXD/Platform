@@ -58,18 +58,6 @@ namespace Platform.Models
             );
         }
 
-        public void ChangeRole(User target, UserRole newRole)
-        {
-            if (target == null) throw new ArgumentNullException(nameof(target));
-
-            if (target.Role == UserRole.Admin && target.Id != this.Id)
-            {
-                throw new UnauthorizedAccessException("Адміністратор не може змінювати роль іншого адміністратора.");
-            }
-
-            target.Role = newRole;
-        }
-
         public bool DeleteUser(User target)
         {
             if (target == null) return false;
@@ -83,13 +71,14 @@ namespace Platform.Models
             return true;
         }
 
-        public void EditCourse(Course course, string title, string desc, FileModel? banner)
+        public void EditCourse(Course course, string title, string desc, FileModel? banner, CourseCategory category, string? pass)
         {
             if (course == null) throw new ArgumentNullException(nameof(course));
 
-            if (!string.IsNullOrWhiteSpace(title)) course.Title = title;
-            if (!string.IsNullOrWhiteSpace(desc)) course.Description = desc;
-            if (banner != null) course.Banner = banner;
+            string finalTitle = string.IsNullOrWhiteSpace(title) ? course.Title : title;
+            string finalDesc = string.IsNullOrWhiteSpace(desc) ? course.Description : desc;
+
+            course.UpdateCourseInfo(finalTitle, finalDesc, banner, category, pass);
         }
 
         public void AcceptStudent(Student student, Course course)

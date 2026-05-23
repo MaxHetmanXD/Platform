@@ -41,8 +41,13 @@ namespace Platform.Models
                 throw new ArgumentException("MaxPoints має бути в межах 0..100.");
             }
 
+            if (deadline.HasValue && deadline.Value < DateTime.Now)
+            {
+                throw new ArgumentException("Дедлайн не може бути встановлений у минулому часі.");
+            }
+
             Title = title;
-            TheoryContent = theory;
+            TheoryContent = theory ?? string.Empty;
             MaxPoints = maxPoints;
             Deadline = deadline;
             Attachments = newMaterials ?? new List<FileModel>();

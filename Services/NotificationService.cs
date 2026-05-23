@@ -71,13 +71,14 @@ namespace Platform.Services
             }
         }
 
-        public void NotifyNewContent(Course course, object content)
+        public void NotifyNewContent(Course course, object content, List<Student> targetStudents)
         {
             string contentTitle = (content as Lesson)?.Title ?? (content as Task)?.Title ?? string.Empty;
             if (string.IsNullOrEmpty(contentTitle)) return;
 
             string message = $"У курсі '{course.Title}' опубліковано новий матеріал: '{contentTitle}'.";
-            foreach (var student in course.Students)
+
+            foreach (var student in targetStudents)
             {
                 Send(student, "Новий матеріал", message);
             }

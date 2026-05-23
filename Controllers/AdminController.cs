@@ -150,24 +150,6 @@ namespace Platform.Controllers
             return RedirectToAction("Users");
         }
 
-        [HttpPost]
-        public async Task<IActionResult> ChangeRole(Guid userId, UserRole newRole)
-        {
-            var adminIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
-            Guid.TryParse(adminIdStr, out Guid adminId);
-            var currentAdmin = await _context.Users.OfType<Admin>().FirstOrDefaultAsync(a => a.Id == adminId);
-
-            var targetUser = await _context.Users.FindAsync(userId);
-
-            if (currentAdmin != null && targetUser != null)
-            {
-                currentAdmin.ChangeRole(targetUser, newRole);
-
-                await _context.SaveChangesAsync();
-            }
-            return RedirectToAction("Users");
-        }
-
         [Authorize(Roles = "Admin")]
         [HttpPost]
         public IActionResult TriggerStorageCleanup()
