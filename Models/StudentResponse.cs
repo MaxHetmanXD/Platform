@@ -69,12 +69,14 @@ namespace Platform.Models
 
         public void Reject()
         {
-            if ((Status == SubmissionStatus.Rejected)) throw new ArgumentException("Статус не може буде перезмінений!");
+            if (Status != SubmissionStatus.Pending)
+            {
+                throw new ArgumentException("Статус не може бути змінений (завдання не було відправлено або вже перевірено)!");
+            }
 
             Status = SubmissionStatus.Rejected;
             FinalGrade = null;
         }
-
         public void RefreshStatus()
         {
             if (TargetTask.Deadline.HasValue)

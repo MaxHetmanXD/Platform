@@ -1,5 +1,0 @@
-@startuml
-class DatabaseInitializer <<static>> {
-    + {static} SeedData() : void
-}
-@enduml

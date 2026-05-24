@@ -1,9 +1,0 @@
-@startuml
-class HomeController {
-    - <<readonly>> _context : PlatformDbContext
-    + HomeController(context:PlatformDbContext)
-    + <<async>> Index(searchString:string, sortOrder:string) : Task<IActionResult>
-    + <<async>> MyCourses(searchString:string, sortOrder:string) : Task<IActionResult>
-}
-Controller <|-- HomeController
-@enduml

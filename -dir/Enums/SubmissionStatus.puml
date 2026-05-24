@@ -1,9 +1,0 @@
-@startuml
-enum SubmissionStatus {
-    Draft,
-    Pending,
-    Checked,
-    Overdue,
-    Rejected,
-}
-@enduml

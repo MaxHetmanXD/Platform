@@ -1,9 +1,0 @@
-@startuml
-interface ISearchable {
-    SearchKey : string <<get>> <<set>>
-    Tags : List<string> <<get>> <<set>>
-    MatchSearch(query:string) : bool
-    GetSearchResultData() : SearchItem
-    GetSearchWeight(query:string) : int
-}
-@enduml

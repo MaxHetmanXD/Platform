@@ -1,8 +1,0 @@
-@startuml
-enum CourseCategory {
-    Programming,
-    Design,
-    Marketing,
-    SoftSkills,
-}
-@enduml

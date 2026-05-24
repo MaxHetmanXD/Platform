@@ -1,8 +1,0 @@
-@startuml
-class SearchItem {
-    + Id : Guid <<get>> <<set>>
-    + Title : string <<get>> <<set>>
-    + ShortDescription : string <<get>> <<set>>
-    + Type : string <<get>> <<set>>
-}
-@enduml

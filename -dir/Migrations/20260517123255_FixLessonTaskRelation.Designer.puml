@@ -1,5 +1,0 @@
-@startuml
-class FixLessonTaskRelation <<partial>> {
-    # <<override>> BuildTargetModel(modelBuilder:ModelBuilder) : void
-}
-@enduml
