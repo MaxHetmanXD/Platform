@@ -5,6 +5,7 @@ using Platform.Enums;
 
 namespace Platform.Models
 {
+    [Obsolete("Клас використовувався як тимчасова альтернатива ДБ, не використовується в контролерах")]
     public class PlatformData
     {
         public List<User> AllUsers { get; set; } = new List<User>();

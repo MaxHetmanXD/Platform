@@ -130,6 +130,7 @@ namespace Platform.Models
             if (Lessons.Contains(lesson)) Lessons.Remove(lesson);
         }
 
+        [Obsolete("Цей метод став зайвим, оскільки тепер логіка перевірки доступу до контенту вбудована безпосередньо в модель студента.")]
         public List<Lesson> GetFilteredContent(Student student)
         {
             if (!Students.Contains(student))

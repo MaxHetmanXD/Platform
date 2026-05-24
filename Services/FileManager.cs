@@ -56,6 +56,7 @@ namespace Platform.Services
             return fileModel;
         }
 
+        [Obsolete("Цей метод замінено на SaveFileAsync з використанням IFormFile, що є стандартом ASP.NET Core для асинхронної обробки завантажень, забезпечуючи кращу продуктивність та економію пам'яті")]
         public string SaveFile(FileModel metadata, byte[] content)
         {
             if (metadata == null) throw new ArgumentNullException(nameof(metadata));
@@ -99,6 +100,7 @@ namespace Platform.Services
             }
         }
 
+        [Obsolete("Логіку було перенесо у контролер для більш зручної архітектури")]
         public string GetDownloadUrl(string storagePath)
         {
             if (string.IsNullOrWhiteSpace(storagePath)) return string.Empty;
@@ -129,6 +131,7 @@ namespace Platform.Services
             return true;
         }
 
+        [Obsolete("Цей метод є застарілим, оскільки покладався на застарілий клас PlatformData. Його було переписано для виклристання БД")]
         public void CleanOrphanedFiles()
         {
             var physicalFiles = Directory.GetFiles(RootFolderPath).ToList();

@@ -39,6 +39,7 @@ namespace Platform.Models
                 .ToList();
         }
 
+        [Obsolete("Метод застарів, використовується лише для тестів. для контролерів використовується public void SubmitTask(StudentResponse response).")]
         public StudentResponse SubmitTask(Task task, List<FileModel> files)
         {
             if (!task.IsVisible)

@@ -4,6 +4,7 @@ using Platform.Models;
 
 namespace Platform.Services
 {
+    [Obsolete("Було проведено зміни в архітектурі, винісши логіку автентифікації в класи юзера та гістя. Клас застарів")]
     public class AuthService
     {
         public User? CurrentUser { get; private set; }

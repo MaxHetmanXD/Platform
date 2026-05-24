@@ -16,7 +16,7 @@ namespace Platform.Controllers
     {
         private readonly PlatformDbContext _context;
         private readonly NotificationService _notificationService;
-        public AccountController(PlatformDbContext context, FileManager fileManager, NotificationService notificationService)
+    public AccountController(PlatformDbContext context, FileManager fileManager, NotificationService notificationService)
         {
             _context = context;
             _fileManager = fileManager;
@@ -34,35 +34,32 @@ namespace Platform.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = _context.Users.FirstOrDefault(u => u.Login == model.Login);
+                var guest = new Guest();
+
+                var user = guest.Login(model.Login, model.Password, _context.Users);
 
                 if (user != null)
                 {
-                    IAuthenticatable authUser = user;
-
-                    if (!authUser.IsAccountActive())
+                    if (!user.IsAccountActive())
                     {
                         ModelState.AddModelError("", "Цей акаунт деактивовано або заблоковано.");
                         return View(model);
                     }
 
-                    if (user.Authenticate(model.Login, model.Password))
+                    _context.SaveChanges();
+                    var claims = new List<Claim>
                     {
-                        _context.SaveChanges();
+                        new Claim(ClaimTypes.NameIdentifier, user.GetIdentity().ToString()),
+                        new Claim(ClaimTypes.Name, user.Nickname),
+                        new Claim(ClaimTypes.Role, user.Role.ToString())
+                    };
 
-                        var claims = new List<Claim>
-                        {
-                            new Claim(ClaimTypes.NameIdentifier, authUser.GetIdentity().ToString()),
-                            new Claim(ClaimTypes.Name, user.Nickname),
-                            new Claim(ClaimTypes.Role, user.Role.ToString())
-                        };
+                    var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+                    await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
 
-                        var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-                        await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
-
-                        return RedirectToAction("Index", "Home");
-                    }
+                    return RedirectToAction("Index", "Home");
                 }
+
                 ModelState.AddModelError("", "Невірний логін або пароль.");
             }
             return View(model);
