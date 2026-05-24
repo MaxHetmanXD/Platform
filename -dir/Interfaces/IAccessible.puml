@@ -1,0 +1,5 @@
+@startuml
+interface IAccessible {
+    SetAccessibility(allowedStudents:List<Student>) : void
+}
+@enduml

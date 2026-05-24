@@ -1,0 +1,28 @@
+@startuml
+class Task {
+    + Id : Guid <<get>>
+    + LessonId : Guid <<get>> <<set>>
+    + Lesson : Lesson <<get>> <<set>>
+    + Title : string <<get>> <<set>>
+    + TheoryContent : string <<get>> <<set>>
+    + MaxPoints : int <<get>> <<set>>
+    + Deadline : DateTime? <<get>> <<set>>
+    + IsVisible : bool <<get>> <<set>> = true
+    + Attachments : List<FileModel> <<get>> <<set>>
+    + HasAttachments : bool <<get>>
+    + AllowedStudents : List<Student> <<get>> <<set>>
+    + Responses : List<StudentResponse> <<get>> <<set>>
+    + UpdateTaskInfo(title:string, theory:string, maxPoints:int, deadline:DateTime?, isVisible:bool, newMaterials:List<FileModel>) : void
+    + SetAccessibility(students:List<Student>) : void
+    + CheckSubmissionEligibility(student:Student) : bool
+    + GetTaskStatus(student:Student) : string
+    + GetStudentGrade(student:Student) : Grade?
+    + IsOverdue() : bool
+    + AttachFile(file:FileModel) : void
+    + RemoveFile(file:FileModel) : bool
+    + GetAttachments() : List<FileModel>
+    + IsAttachmentAllowed() : bool
+}
+IAttachable <|-- Task
+IAccessible <|-- Task
+@enduml

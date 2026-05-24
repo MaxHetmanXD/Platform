@@ -1,0 +1,8 @@
+@startuml
+class FilesController {
+    - <<readonly>> _context : PlatformDbContext
+    + FilesController(context:PlatformDbContext)
+    + <<async>> Download(id:Guid) : Task<IActionResult>
+}
+Controller <|-- FilesController
+@enduml

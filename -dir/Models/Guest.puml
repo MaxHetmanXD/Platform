@@ -1,0 +1,8 @@
+@startuml
+class Guest {
+    + TempId : string <<get>>
+    + Guest()
+    + Login(login:string, password:string, authService:object) : User?
+    + BrowseCourses(allPlatformCourses:List<Course>, category:CourseCategory?) : List<Course>
+}
+@enduml

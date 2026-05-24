@@ -1,0 +1,16 @@
+@startuml
+class FileManager {
+    + RootFolderPath : string <<get>>
+    + AllowedExtensions : List<string> <<get>>
+    + MaxFileSize : long <<get>>
+    - <<readonly>> _platform : PlatformData
+    + FileManager(rootFolderPath:string, allowedExtensions:List<string>, maxFileSize:long, platform:PlatformData)
+    + <<async>> SaveFileAsync(file:IFormFile, uploader:User) : Task<FileModel>
+    + SaveFile(metadata:FileModel, content:byte[]) : string
+    + DeleteFile(filePath:string) : bool
+    + GetDownloadUrl(storagePath:string) : string
+    + CheckSystemLimits(fileSize:long) : bool
+    + CleanOrphanedFiles() : void
+    + CleanOrphanedFiles(dbContext:Platform.Data.PlatformDbContext) : void
+}
+@enduml

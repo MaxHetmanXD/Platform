@@ -1,0 +1,5 @@
+@startuml
+class AddAccessibilityTables <<partial>> {
+    # <<override>> BuildTargetModel(modelBuilder:ModelBuilder) : void
+}
+@enduml

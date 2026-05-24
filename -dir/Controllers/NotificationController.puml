@@ -1,0 +1,10 @@
+@startuml
+class NotificationController {
+    - <<readonly>> _context : PlatformDbContext
+    - <<readonly>> _notificationService : NotificationService
+    + NotificationController(context:PlatformDbContext, notificationService:NotificationService)
+    + Index(searchString:string?) : IActionResult
+    + ClearAll() : IActionResult
+}
+Controller <|-- NotificationController
+@enduml

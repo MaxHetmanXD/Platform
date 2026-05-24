@@ -113,19 +113,24 @@ namespace Platform.Models
 
             course.RemoveLesson(lesson);
         }
-        public Task CreateTask(Lesson lesson, string title, string theory, int maxPoints, DateTime deadline, List<FileModel> files)
+        public Task CreateTask(Lesson lesson, string title, string theory, int maxPoints, DateTime deadline, bool isVisible, List<FileModel> files)
         {
             var task = new Task();
-            task.UpdateTaskInfo(title, theory, maxPoints, deadline, files);
+            task.UpdateTaskInfo(title, theory, maxPoints, deadline, isVisible, files);
 
             lesson.AddTask(task);
             return task;
         }
 
-        public void EditTask(Task task, string title, string theory, int maxPoints, DateTime? deadline, List<FileModel> files)
+        public void RejectSubmission(StudentResponse resp)
+        {
+            resp.Reject();
+        }
+
+        public void EditTask(Task task, string title, string theory, int maxPoints, DateTime? deadline, bool isVisList, List<FileModel> files)
         {
             if (task == null) throw new ArgumentNullException(nameof(task));
-            task.UpdateTaskInfo(title, theory, maxPoints, deadline, files);
+            task.UpdateTaskInfo(title, theory, maxPoints, deadline, isVisList, files);
         }
 
         public void DeleteTask(Lesson lesson, Task task)

@@ -1,0 +1,6 @@
+@startuml
+class TaskStatusDTO {
+    + TaskTitle : string <<get>> <<set>>
+    + Status : string <<get>> <<set>>
+}
+@enduml

@@ -1,0 +1,24 @@
+@startuml
+class TaskDetailsViewModel {
+    + CourseId : Guid <<get>> <<set>>
+    + CourseTitle : string <<get>> <<set>>
+    + LessonId : Guid <<get>> <<set>>
+    + TaskId : Guid <<get>> <<set>>
+    + TaskTitle : string <<get>> <<set>>
+    + TaskInfo : string <<get>> <<set>>
+    + MaxPoints : int <<get>> <<set>>
+    + Deadline : DateTime? <<get>> <<set>>
+    + IsPublic : bool <<get>> <<set>>
+    + TaskFiles : List<FileItemViewModel> <<get>> <<set>>
+    + IsOwnerOrAdmin : bool <<get>> <<set>>
+    + IsStudent : bool <<get>> <<set>>
+    + ResponseStudentId : Guid? <<get>> <<set>>
+    + ResponseStudentNickname : string <<get>> <<set>>
+    + ResponseStatus : string <<get>> <<set>>
+    + SubmissionDate : DateTime? <<get>> <<set>>
+    + CurrentGrade : double? <<get>> <<set>>
+    + ResponseFiles : List<FileItemViewModel> <<get>> <<set>>
+    + AvailableStudentsForTask : List<ParticipantItemViewModel> <<get>> <<set>>
+    + AllowedStudentIds : List<Guid> <<get>> <<set>>
+}
+@enduml

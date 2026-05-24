@@ -1,0 +1,16 @@
+@startuml
+class AccountController {
+    - <<readonly>> _context : PlatformDbContext
+    - <<readonly>> _notificationService : NotificationService
+    + AccountController(context:PlatformDbContext, fileManager:FileManager, notificationService:NotificationService)
+    + Login() : IActionResult
+    + <<async>> Login(model:LoginViewModel) : Task<IActionResult>
+    + <<async>> Profile(id:Guid?) : Task<IActionResult>
+    + <<async>> Logout() : Task<IActionResult>
+    + <<async>> ChangePassword(userId:Guid, oldPassword:string, newPassword:string) : Task<IActionResult>
+    - <<readonly>> _fileManager : FileManager
+    + <<async>> EditProfile(userId:Guid, nickname:string, email:string, info:string, avatarFile:IFormFile?, login:string?, specialValue:string?) : Task<IActionResult>
+    + <<async>> EmergencyAdminReset() : Task<IActionResult>
+}
+Controller <|-- AccountController
+@enduml

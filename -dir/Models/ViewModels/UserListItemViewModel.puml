@@ -1,0 +1,11 @@
+@startuml
+class UserListItemViewModel {
+    + Id : Guid <<get>> <<set>>
+    + Nickname : string <<get>> <<set>>
+    + Login : string <<get>> <<set>>
+    + Role : UserRole <<get>> <<set>>
+    + SpecialField : string <<get>> <<set>>
+    + LastLogin : DateTime <<get>> <<set>>
+    + IsActive : bool <<get>> <<set>>
+}
+@enduml

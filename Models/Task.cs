@@ -29,7 +29,7 @@ namespace Platform.Models
         public List<Student> AllowedStudents { get; set; } = new List<Student>();
         public List<StudentResponse> Responses { get; set; } = new List<StudentResponse>();
 
-        public void UpdateTaskInfo(string title, string theory, int maxPoints, DateTime? deadline, List<FileModel> newMaterials)
+        public void UpdateTaskInfo(string title, string theory, int maxPoints, DateTime? deadline, bool isVisible, List<FileModel> newMaterials)
         {
             if (string.IsNullOrWhiteSpace(title))
             {
@@ -49,6 +49,7 @@ namespace Platform.Models
             Title = title;
             TheoryContent = theory ?? string.Empty;
             MaxPoints = maxPoints;
+            IsVisible = isVisible;
             Deadline = deadline;
             Attachments = newMaterials ?? new List<FileModel>();
         }

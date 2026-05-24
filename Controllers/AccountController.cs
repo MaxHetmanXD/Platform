@@ -151,34 +151,29 @@ namespace Platform.Controllers
 
             bool success = false;
 
-            if (isAdmin && currentUserId != userId)
+            try
             {
-                if (newPassword.Length >= 8)
+                if (isAdmin && currentUserId != userId)
                 {
-                    targetUser.Password = newPassword;
+                    targetUser.ChangePassword(newPassword);
                     success = true;
                 }
                 else
                 {
-                    TempData["Error"] = "Новий пароль має містити мінімум 8 символів.";
+                    Platform.Interfaces.IAuthenticatable authUser = targetUser;
+                    if (authUser.GetPasswordHash() != oldPassword)
+                    {
+                        TempData["Error"] = "Старий пароль введено неправильно!";
+                        return RedirectToAction("Profile", new { id = userId });
+                    }
+
+                    targetUser.ChangePassword(newPassword);
+                    success = true;
                 }
             }
-
-            else
+            catch (ArgumentException ex)
             {
-                Platform.Interfaces.IAuthenticatable authUser = targetUser;
-                if (authUser.GetPasswordHash() != oldPassword)
-                {
-                    TempData["Error"] = "Старий пароль введено неправильно!";
-                    return RedirectToAction("Profile", new { id = userId });
-                }
-
-                success = targetUser.ChangePassword(oldPassword, newPassword);
-
-                if (!success)
-                {
-                    TempData["Error"] = "Новий пароль має містити мінімум 8 символів.";
-                }
+                TempData["Error"] = ex.Message;
             }
 
             if (success)
@@ -219,27 +214,23 @@ namespace Platform.Controllers
 
                 try
                 {
-                    targetUser.UpdateProfile(nickname, email, newAvatar);
-                    targetUser.Info = info ?? string.Empty;
-
-                    if (isAdmin && currentUserId != targetUser.Id)
+                    if (isAdmin)
                     {
-                        var currentAdmin = await _context.Users.OfType<Admin>().FirstOrDefaultAsync(a => a.Id == currentUserId);
-                        if (currentAdmin != null)
-                        {
-                            currentAdmin.EditUserFields(targetUser, login, targetUser.Password, nickname, email, newAvatar, info ?? string.Empty);
+                        var currentAdmin = await _context.Users.OfType<Admin>().FirstOrDefaultAsync(a => a.Id == userId);
 
-                            if (targetUser is Teacher t && !string.IsNullOrWhiteSpace(specialValue)) t.Position = specialValue;
-                            if (targetUser is Student s && !string.IsNullOrWhiteSpace(specialValue)) s.Group = specialValue;
-                        }
+                        currentAdmin?.EditUserFields(targetUser, targetUser.Login, null, nickname, email, newAvatar, info, specialValue);
+                    }
+                    else
+                    {
+                        targetUser.UpdateProfile(nickname, email, newAvatar, info);
                     }
 
                     await _context.SaveChangesAsync();
-                    TempData["Message"] = "Профіль успішно оновлено!";
+                    TempData["Message"] = "Профіль успішно оновлено.";
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is ArgumentException || ex is UnauthorizedAccessException)
                 {
-                    TempData["Error"] = $"Помилка збереження: {ex.InnerException?.Message ?? ex.Message}";
+                    TempData["Error"] = ex.Message;
                 }
             }
             return RedirectToAction("Profile", new { id = userId });

@@ -1,0 +1,14 @@
+@startuml
+class AdminController {
+    - <<readonly>> _context : PlatformDbContext
+    - <<readonly>> _fileManager : FileManager
+    + AdminController(context:PlatformDbContext, fileManager:FileManager)
+    + Index() : IActionResult
+    + <<async>> Courses(searchString:string, sortOrder:string) : Task<IActionResult>
+    + <<async>> Users(searchString:string, sortOrder:string) : Task<IActionResult>
+    + <<async>> CreateUser(roleType:string) : Task<IActionResult>
+    + <<async>> ToggleUserStatus(userId:Guid) : Task<IActionResult>
+    + TriggerStorageCleanup() : IActionResult
+}
+Controller <|-- AdminController
+@enduml

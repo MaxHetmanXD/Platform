@@ -1,0 +1,5 @@
+@startuml
+class AddLessonIsPublic <<partial>> {
+    # <<override>> BuildTargetModel(modelBuilder:ModelBuilder) : void
+}
+@enduml

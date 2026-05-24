@@ -39,7 +39,7 @@ namespace Platform.Models
         public void Deactivate() => IsActive = false;
         public void Activate() => IsActive = true;
 
-        public void UpdateProfile(string nickname, string email, FileModel? avatar)
+        public void UpdateProfile(string nickname, string email, FileModel? avatar, string info)
         {
             if (string.IsNullOrWhiteSpace(nickname) || string.IsNullOrWhiteSpace(email))
             {
@@ -66,18 +66,18 @@ namespace Platform.Models
             Nickname = nickname;
             Email = email;
             Avatar = avatar;
+            Info = info ?? string.Empty;
 
             OnProfileUpdated?.Invoke(this, $"Користувач {Login} оновив свій профіль.");
         }
 
-        public bool ChangePassword(string oldPass, string newPass)
+        public void ChangePassword(string newPassword)
         {
-            if (newPass.Length < 8) return false;
-
-            if (Password != oldPass) return false;
-
-            Password = newPass;
-            return true;
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword.Length < 8)
+            {
+                throw new ArgumentException("Пароль має містити щонайменше 8 символів.");
+            }
+            Password = newPassword;
         }
 
         public bool Authenticate(string login, string password)

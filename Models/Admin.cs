@@ -28,7 +28,7 @@ namespace Platform.Models
             return new User(login, password, nickname, email, role);
         }
 
-        public void EditUserFields(User target, string newLogin, string newPassword, string newNickname, string newEmail, FileModel? newAvatar, string newInfo)
+        public void EditUserFields(User target, string newLogin, string newPassword, string newNickname, string newEmail, FileModel? newAvatar, string newInfo, string? specialValue)
         {
             if (target == null) throw new ArgumentNullException(nameof(target));
 
@@ -37,15 +37,8 @@ namespace Platform.Models
                 throw new UnauthorizedAccessException("Адміністратор не може редагувати дані іншого адміністратора.");
             }
 
-            if (!string.IsNullOrWhiteSpace(newLogin))
-            {
-                target.Login = newLogin;
-            }
-
-            if (!string.IsNullOrWhiteSpace(newPassword) && newPassword.Length >= 8)
-            {
-                target.Password = newPassword;
-            }
+            if (!string.IsNullOrWhiteSpace(newLogin)) target.Login = newLogin;
+            if (!string.IsNullOrWhiteSpace(newPassword)) target.ChangePassword(newPassword);
 
             if (!string.IsNullOrWhiteSpace(newInfo))
             {
@@ -53,10 +46,13 @@ namespace Platform.Models
             }
 
             target.UpdateProfile(
-                string.IsNullOrWhiteSpace(newNickname) ? target.Nickname : newNickname,
-                string.IsNullOrWhiteSpace(newEmail) ? target.Email : newEmail,
-                newAvatar ?? target.Avatar
-            );
+                    string.IsNullOrWhiteSpace(newNickname) ? target.Nickname : newNickname,
+                    string.IsNullOrWhiteSpace(newEmail) ? target.Email : newEmail,
+                    newAvatar,
+                    newInfo
+                );
+            if (target is Teacher t && specialValue != null) t.Position = specialValue;
+            if (target is Student s && specialValue != null) s.Group = specialValue;
         }
 
         public bool BlockUser(User target)
@@ -130,19 +126,19 @@ namespace Platform.Models
             course.RemoveLesson(lesson);
         }
 
-        public Task CreateTask(Lesson lesson, string title, string theory, int maxPoints, DateTime? deadline, List<FileModel> files)
+        public Task CreateTask(Lesson lesson, string title, string theory, int maxPoints, DateTime? deadline, bool isVisible, List<FileModel> files)
         {
             if (lesson == null) throw new ArgumentNullException(nameof(lesson));
             var task = new Task();
-            task.UpdateTaskInfo(title, theory, maxPoints, deadline, files);
+            task.UpdateTaskInfo(title, theory, maxPoints, deadline, isVisible, files);
             lesson.AddTask(task);
             return task;
         }
 
-        public void EditTask(Task task, string title, string theory, int maxPoints, DateTime? deadline, List<FileModel> files)
+        public void EditTask(Task task, string title, string theory, int maxPoints, DateTime? deadline, bool isVisible, List<FileModel> files)
         {
             if (task == null) throw new ArgumentNullException(nameof(task));
-            task.UpdateTaskInfo(title, theory, maxPoints, deadline, files);
+            task.UpdateTaskInfo(title, theory, maxPoints, deadline, isVisible, files);
         }
 
         public void DeleteTask(Lesson lesson, Task task)

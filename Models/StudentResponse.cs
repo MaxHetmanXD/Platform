@@ -67,6 +67,14 @@ namespace Platform.Models
             OnSubmitted?.Invoke(this, this);
         }
 
+        public void Reject()
+        {
+            if ((Status == SubmissionStatus.Rejected)) throw new ArgumentException("Статус не може буде перезмінений!");
+
+            Status = SubmissionStatus.Rejected;
+            FinalGrade = null;
+        }
+
         public void RefreshStatus()
         {
             if (TargetTask.Deadline.HasValue)

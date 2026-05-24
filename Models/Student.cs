@@ -58,6 +58,11 @@ namespace Platform.Models
             return response;
         }
 
+        public void RejectSubmission(StudentResponse resp)
+        {
+            resp.Reject();
+        }
+
         public void SubmitTask(StudentResponse response)
         {
             if (!response.TargetTask.IsVisible)

@@ -49,14 +49,24 @@ namespace Platform.Services
         public bool ChangePassword(User user, string oldPass, string newPass)
         {
             if (user == null) return false;
-            bool success = user.ChangePassword(oldPass, newPass);
 
-            if (success)
+            Platform.Interfaces.IAuthenticatable authUser = user;
+            if (authUser.GetPasswordHash() != oldPass)
             {
-                OnPasswordChanged?.Invoke(this, $"Користувач {user.Login} успішно змінив пароль.");
+                return false;
             }
 
-            return success;
+            try
+            {
+                user.ChangePassword(newPass);
+
+                OnPasswordChanged?.Invoke(this, $"Користувач {user.Login} успішно змінив пароль.");
+                return true;
+            }
+            catch (ArgumentException)
+            {
+                return false;
+            }
         }
 
         public bool CheckUniqueness(string login, string email)

@@ -1,0 +1,17 @@
+@startuml
+class FileModel {
+    + Id : Guid <<get>>
+    + FileName : string <<get>> <<set>>
+    + Extension : string <<get>> <<set>>
+    + SizeInBytes : long <<get>> <<set>>
+    + LocalPath : string <<get>> <<set>>
+    + Uploader : User <<get>>
+    + UploadDate : DateTime <<get>>
+    # FileModel()
+    + FileModel(fileName:string, sizeInBytes:long, uploader:User)
+    + Validate(maxSize:long, allowedExt:string[]) : bool
+    + GenerateStorageName() : string
+    + GetReadableSize() : string
+    + GetAccessPath() : string
+}
+@enduml

@@ -491,7 +491,6 @@ namespace Platform.Controllers
             newLesson.IsPublic = false;
             newLesson.SetAccessibility(new List<Student>());
 
-            course.AddLesson(newLesson);
             _context.Lessons.Add(newLesson);
 
             await _context.SaveChangesAsync();
@@ -670,8 +669,6 @@ namespace Platform.Controllers
             var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
             Guid courseId = lesson.Course.Id;
 
-            lesson.Course.RemoveLesson(lesson);
-
             if (isAdmin) ((Admin)currentUser!).DeleteLesson(lesson.Course, lesson);
             else ((Teacher)currentUser!).DeleteLesson(lesson.Course, lesson);
 
@@ -842,13 +839,12 @@ namespace Platform.Controllers
             Platform.Models.Task newTask;
             string randomId = Guid.NewGuid().ToString().Substring(0, 4);
 
-            if (isAdmin) newTask = ((Admin)currentUser!).CreateTask(lesson, $"Нове завдання {randomId}", "Опис...", 100, DateTime.Now.AddDays(7), new List<FileModel>());
-            else newTask = ((Teacher)currentUser!).CreateTask(lesson, $"Нове завдання {randomId}", "Опис...", 100, DateTime.Now.AddDays(7), new List<FileModel>());
+            if (isAdmin) newTask = ((Admin)currentUser!).CreateTask(lesson, $"Нове завдання {randomId}", "Опис...", 100, DateTime.Now.AddDays(7), false, new List<FileModel>());
+            else newTask = ((Teacher)currentUser!).CreateTask(lesson, $"Нове завдання {randomId}", "Опис...", 100, DateTime.Now.AddDays(7), false, new List<FileModel>());
 
             newTask.IsVisible = false;
             newTask.SetAccessibility(new List<Student>());
 
-            lesson.AddTask(newTask);
             _context.Tasks.Add(newTask);
 
             await _context.SaveChangesAsync();
@@ -913,7 +909,6 @@ namespace Platform.Controllers
             DateTime finalDeadline = deadline ?? DateTime.MaxValue;
 
             bool finalIsVisible = isVisible;
-            task.IsVisible = finalIsVisible;
 
             List<Student> finalStudentsList = new List<Student>();
             if (finalIsVisible)
@@ -929,14 +924,14 @@ namespace Platform.Controllers
             {
                 if (isAdmin)
                 {
-                    ((Admin)currentUser!).EditTask(task, title, info ?? string.Empty, maxPoints, deadline, task.Attachments.ToList());
+                    ((Admin)currentUser!).EditTask(task, title, info ?? string.Empty, maxPoints, deadline, finalIsVisible, task.Attachments.ToList());
 
                     var currentAdmin = currentUser as Admin;
                     currentAdmin?.SetAccessibility(task, finalStudentsList);
                 }
                 else
                 {
-                    ((Teacher)currentUser!).EditTask(task, title, info ?? string.Empty, maxPoints, deadline, task.Attachments.ToList());
+                    ((Teacher)currentUser!).EditTask(task, title, info ?? string.Empty, maxPoints, deadline, finalIsVisible, task.Attachments.ToList());
 
                     task.SetAccessibility(finalStudentsList);
                 }
@@ -1116,11 +1111,22 @@ namespace Platform.Controllers
             }
             else if (action == "Return")
             {
-                response.Status = SubmissionStatus.Rejected;
-                if (response.FinalGrade != null)
+                try
                 {
-                    _context.Grades.Remove(response.FinalGrade);
-                    response.FinalGrade = null;
+                    var gradeToRemove = response.FinalGrade;
+
+                    student.RejectSubmission(response);
+
+                    if (gradeToRemove != null)
+                    {
+                        _context.Grades.Remove(gradeToRemove);
+                    }
+
+                    TempData["Message"] = "Відправку роботи успішно скасовано.";
+                }
+                catch (ArgumentException ex)
+                {
+                    TempData["Error"] = ex.Message;
                 }
             }
 
@@ -1181,13 +1187,21 @@ namespace Platform.Controllers
             }
             else if (action == "Return")
             {
-                response.Status = SubmissionStatus.Rejected;
-                if (response.FinalGrade != null)
+                try
                 {
-                    _context.Grades.Remove(response.FinalGrade);
-                    response.FinalGrade = null;
+                    var gradeToRemove = response.FinalGrade;
+                    teacher.RejectSubmission(response);
+                    if (gradeToRemove != null)
+                    {
+                        _context.Grades.Remove(gradeToRemove);
+                    }
+
+                    TempData["Message"] = "Роботу повернуто студенту на доопрацювання.";
                 }
-                TempData["Message"] = "Роботу повернуто студенту на доопрацювання.";
+                catch (ArgumentException ex)
+                {
+                    TempData["Error"] = ex.Message;
+                }
             }
 
             await _context.SaveChangesAsync();

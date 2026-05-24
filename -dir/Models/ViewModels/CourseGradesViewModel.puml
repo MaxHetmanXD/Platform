@@ -1,0 +1,25 @@
+@startuml
+class TaskGradeViewModel {
+    + TaskId : Guid <<get>> <<set>>
+    + Title : string <<get>> <<set>>
+    + Deadline : DateTime? <<get>> <<set>>
+    + Status : string <<get>> <<set>>
+    + GradeString : string <<get>> <<set>>
+    + GradeValue : double? <<get>> <<set>>
+}
+class StudentGradesViewModel {
+    + StudentId : Guid <<get>> <<set>>
+    + Nickname : string <<get>> <<set>>
+    + AvatarId : Guid? <<get>> <<set>>
+    + AverageGrade : double <<get>> <<set>>
+    + Tasks : List<TaskGradeViewModel> <<get>> <<set>>
+}
+class CourseGradesViewModel {
+    + CourseId : Guid <<get>> <<set>>
+    + CourseTitle : string <<get>> <<set>>
+    + IsOwnerOrAdmin : bool <<get>> <<set>>
+    + AllCourseStudents : List<ParticipantItemViewModel> <<get>> <<set>>
+    + SelectedStudentId : Guid? <<get>> <<set>>
+    + Students : List<StudentGradesViewModel> <<get>> <<set>>
+}
+@enduml

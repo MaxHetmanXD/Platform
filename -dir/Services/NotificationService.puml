@@ -1,0 +1,15 @@
+@startuml
+class NotificationService {
+    + EventLog : List<string> <<get>> <<set>>
+    + Notifications : List<NotificationMessage> <<get>> <<set>>
+    + Send(recipient:User, title:string, message:string) : void
+    + Send(recipient:User, message:string) : void
+    + MarkAsReadAsync(id:Guid) : void
+    + HandleGradeEvent(grade:Grade, student:Student) : void
+    + HandleSecurityEvent(user:User, action:string) : void
+    + NotifyTeacherOfSubmission(student:Student, task:Task, course:Course, platform:PlatformData) : void
+    + NotifyTeacherOfSubmission(student:Student, task:Task, course:Course) : void
+    + NotifyNewContent(course:Course, content:object, targetStudents:List<Student>) : void
+    + NotifyEnrollmentChange(student:Student, course:Course, actionType:string) : void
+}
+@enduml

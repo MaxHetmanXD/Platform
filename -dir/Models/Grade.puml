@@ -1,0 +1,15 @@
+@startuml
+class Grade {
+    + Id : Guid <<get>>
+    + Value : int <<get>>
+    + Comment : string <<get>>
+    + DateSet : DateTime <<get>>
+    + Response : StudentResponse <<get>>
+    + ResponseId : Guid <<get>> <<set>>
+    + Grade(value:int, comment:string, response:StudentResponse)
+    # Grade()
+    + UpdateGrade(newValue:int, newComment:string) : void
+    + ValidateValue(valueToCheck:int, maxAllowedPoints:int) : bool
+    + FormatFeedback() : string
+}
+@enduml

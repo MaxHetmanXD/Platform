@@ -1,0 +1,14 @@
+@startuml
+class AuthService {
+    + CurrentUser : User? <<get>>
+    + SessionStartTime : DateTime? <<get>>
+    + MinPasswordLength : int <<get>> = 8
+    - <<readonly>> _platform : PlatformData
+    +  <<event>> OnPasswordChanged : EventHandler<string>? 
+    + AuthService(platform:PlatformData)
+    + Login(login:string, password:string) : User?
+    + Logout() : void
+    + ChangePassword(user:User, oldPass:string, newPass:string) : bool
+    + CheckUniqueness(login:string, email:string) : bool
+}
+@enduml

@@ -1,0 +1,11 @@
+@startuml
+interface IAuthenticatable {
+    Login : string <<get>> <<set>>
+    Password : string <<get>> <<set>>
+    LastLogin : DateTime <<get>> <<set>>
+    GetPasswordHash() : string
+    UpdateLastLogin(timestamp:DateTime) : void
+    IsAccountActive() : bool
+    GetIdentity() : Guid
+}
+@enduml

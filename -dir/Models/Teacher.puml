@@ -1,0 +1,27 @@
+@startuml
+class Teacher {
+    + Position : string <<get>> <<set>>
+    + OwnCourses : List<Course> <<get>> <<set>>
+    # Teacher()
+    + Teacher(login:string, password:string, nickname:string, email:string, position:string)
+    + CreateCourse(title:string, desc:string, cat:CourseCategory, pass:string?) : Course
+    + EditCourse(course:Course, title:string, desc:string, banner:FileModel?, category:CourseCategory, pass:string?) : void
+    + AcceptStudent(student:Student, course:Course) : void
+    + BanStudent(student:Student, course:Course) : void
+    + RemoveStudent(student:Student, course:Course) : void
+    + SetAccessibility(target:object, allowedStudents:List<Student>) : void
+    + CreateLesson(course:Course, title:string, text:string) : Lesson
+    + EditLesson(lesson:Lesson, title:string, text:string, isPublic:bool, files:List<FileModel>) : void
+    + DeleteLesson(course:Course, lesson:Lesson) : void
+    + CreateTask(lesson:Lesson, title:string, theory:string, maxPoints:int, deadline:DateTime, isVisible:bool, files:List<FileModel>) : Task
+    + RejectSubmission(resp:StudentResponse) : void
+    + EditTask(task:Task, title:string, theory:string, maxPoints:int, deadline:DateTime?, isVisList:bool, files:List<FileModel>) : void
+    + DeleteTask(lesson:Lesson, task:Task) : void
+    + GradeSubmission(resp:StudentResponse, score:int, feedback:string) : Grade
+    + GetStudentDetails(student:Student, course:Course) : List<TaskStatusDTO>
+    + DeleteCourse(course:Course) : void
+    + UnbanStudent(student:Student, course:Course) : void
+    + RejectStudent(student:Student, course:Course) : void
+}
+User <|-- Teacher
+@enduml
