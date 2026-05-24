@@ -103,7 +103,7 @@ namespace Platform.Models
 
         public void ExcludeStudent(Student student)
         {
-            Students.Remove(student);
+            if (Students.Contains(student)) Students.Remove(student);
         }
 
         public void AddToBanList(Student student)
@@ -127,7 +127,7 @@ namespace Platform.Models
 
         public void RemoveLesson(Lesson lesson)
         {
-            Lessons.Remove(lesson);
+            if (Lessons.Contains(lesson)) Lessons.Remove(lesson);
         }
 
         public List<Lesson> GetFilteredContent(Student student)
@@ -189,12 +189,12 @@ namespace Platform.Models
         }
         public void RemoveFromBanList(Student student)
         {
-            BannedStudents.Remove(student);
+            if (BannedStudents.Contains(student))  BannedStudents.Remove(student);
         }
 
         public void RemoveFromPending(Student student)
         {
-            PendingStudents.Remove(student);
+            if (PendingStudents.Contains(student)) PendingStudents.Remove(student);
         }
     }
 }

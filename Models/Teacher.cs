@@ -1,5 +1,6 @@
 ﻿using Platform.DTOs;
 using Platform.Enums;
+using Platform.Interfaces;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -55,19 +56,34 @@ namespace Platform.Models
         public void AcceptStudent(Student student, Course course)
         {
             course.ActivateStudent(student);
-            if (!student.EnrolledCourses.Contains(course)) student.EnrolledCourses.Add(course);
+            if (!student.EnrolledCourses.Contains(course)) student.EnrollInCourse(course);
         }
 
         public void BanStudent(Student student, Course course)
         {
             course.AddToBanList(student);
             student.Unenroll(course);
+
         }
 
         public void RemoveStudent(Student student, Course course)
         {
             course.ExcludeStudent(student);
             student.Unenroll(course);
+        }
+
+        public void SetAccessibility(object target, List<Student> allowedStudents)
+        {
+            if (target == null) throw new ArgumentNullException(nameof(target));
+
+            if (target is IAccessible accessibleTarget)
+            {
+                accessibleTarget.SetAccessibility(allowedStudents);
+            }
+            else
+            {
+                throw new ArgumentException("Об'єкт доступу має бути Уроком або Завданням.");
+            }
         }
 
         public Lesson CreateLesson(Course course, string title, string text)
@@ -79,11 +95,16 @@ namespace Platform.Models
             return lesson;
         }
 
-        public void EditLesson(Lesson lesson, string title, string text, bool isPublic, List<Student> allowedStudents)
+        public void EditLesson(Lesson lesson, string title, string text, bool isPublic, List<FileModel> files)
         {
-            lesson.UpdateContent(title, text, lesson.Attachments);
-            lesson.IsPublic = isPublic;
-            lesson.SetAccessibility(allowedStudents);
+            if (lesson == null) throw new ArgumentNullException(nameof(lesson));
+
+            if (lesson.Course.OwnerId != this.Id)
+            {
+                throw new UnauthorizedAccessException("Ви не є власником цього курсу.");
+            }
+
+            lesson.UpdateContent(title, text ?? string.Empty, isPublic, files);
         }
 
         public void DeleteLesson(Course course, Lesson lesson)

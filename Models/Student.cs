@@ -132,5 +132,12 @@ namespace Platform.Models
                 course.ExcludeStudent(this);
             }
         }
+        public void EnrollInCourse(Course course)
+        {
+            if (course != null && !EnrolledCourses.Contains(course))
+            {
+                EnrolledCourses.Add(course);
+            }
+        }
     }
 }

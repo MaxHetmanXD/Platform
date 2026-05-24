@@ -36,6 +36,9 @@ namespace Platform.Models
             Info = string.Empty;
         }
 
+        public void Deactivate() => IsActive = false;
+        public void Activate() => IsActive = true;
+
         public void UpdateProfile(string nickname, string email, FileModel? avatar)
         {
             if (string.IsNullOrWhiteSpace(nickname) || string.IsNullOrWhiteSpace(email))

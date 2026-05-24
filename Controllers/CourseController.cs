@@ -625,42 +625,26 @@ namespace Platform.Controllers
                 }
             }
 
+            List<Student> finalStudentsList = isPublic ? lesson.Course.Students.ToList() :
+                            lesson.Course.Students.Where(s => allowedStudentIds != null && allowedStudentIds.Contains(s.Id)).ToList();
             try
             {
-                lesson.UpdateContent(title, info ?? string.Empty, lesson.Attachments.ToList());
+                if (isAdmin)
+                {
+                    ((Admin)currentUser!).EditLesson(lesson, title, info, isPublic, lesson.Attachments.ToList());
+                    ((Admin)currentUser!).SetAccessibility(lesson, finalStudentsList);
+                }
+                else
+                {
+                    ((Teacher)currentUser!).EditLesson(lesson, title, info, isPublic, lesson.Attachments.ToList());
+                    ((Teacher)currentUser!).SetAccessibility(lesson, finalStudentsList);
+                }
             }
-            catch (ArgumentException ex)
+            catch (Exception ex) when (ex is ArgumentException || ex is UnauthorizedAccessException)
             {
                 TempData["Error"] = ex.Message;
                 return RedirectToAction("Lesson", new { id = lessonId });
             }
-
-            bool finalIsPublic = isPublic;
-
-            List<Student> finalStudentsList = new List<Student>();
-            if (finalIsPublic)
-            {
-                finalStudentsList = lesson.Course.Students.ToList();
-            }
-            else if (allowedStudentIds != null && allowedStudentIds.Any())
-            {
-                finalStudentsList = lesson.Course.Students.Where(s => allowedStudentIds.Contains(s.Id)).ToList();
-            }
-
-            if (isAdmin) ((Admin)currentUser!).EditLesson(lesson, lesson.Title, lesson.TheoryContent, finalIsPublic, finalStudentsList);
-            else ((Teacher)currentUser!).EditLesson(lesson, lesson.Title, lesson.TheoryContent, finalIsPublic, finalStudentsList);
-
-            if (isAdmin)
-            {
-                var currentAdmin = currentUser as Admin;
-                currentAdmin?.SetAccessibility(lesson, finalStudentsList);
-            }
-            else
-            {
-                lesson.SetAccessibility(finalStudentsList);
-            }
-
-            lesson.IsPublic = finalIsPublic;
 
             if (finalStudentsList.Any())
             {

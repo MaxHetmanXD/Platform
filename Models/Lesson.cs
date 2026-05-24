@@ -28,7 +28,7 @@ namespace Platform.Models
 
         public List<Student> AllowedStudents { get; set; } = new List<Student>();
 
-        public void UpdateContent(string newTitle, string newTheory, List<FileModel> newMaterials)
+        public void UpdateContent(string newTitle, string newTheory, bool isPublic, List<FileModel> newMaterials)
         {
             if (string.IsNullOrWhiteSpace(newTitle))
             {
@@ -37,6 +37,7 @@ namespace Platform.Models
 
             Title = newTitle;
             TheoryContent = newTheory;
+            IsPublic = isPublic;
 
             Attachments.Clear();
             if (newMaterials != null)
@@ -64,7 +65,7 @@ namespace Platform.Models
 
         public void RemoveTask(Task task)
         {
-            Tasks.Remove(task);
+            if (Tasks.Contains(task)) Tasks.Remove(task);
         }
 
         public List<Task> GetAccessibleTasks(Student student)

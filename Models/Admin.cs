@@ -68,7 +68,7 @@ namespace Platform.Models
                 throw new UnauthorizedAccessException("Адміністратор не може заблокувати іншого адміністратора.");
             }
 
-            target.IsActive = false;
+            target.Deactivate();
             return true;
         }
 
@@ -76,7 +76,7 @@ namespace Platform.Models
         {
             if (target == null) return false;
 
-            target.IsActive = true;
+            target.Activate();
             return true;
         }
 
@@ -94,43 +94,40 @@ namespace Platform.Models
         {
             if (course == null || student == null) throw new ArgumentNullException("Студент або курс не існують.");
             course.ActivateStudent(student);
+            student.EnrollInCourse(course);
         }
 
         public void BanStudent(Student student, Course course)
         {
             if (course == null || student == null) throw new ArgumentNullException("Студент або курс не існують.");
             course.AddToBanList(student);
+            student.Unenroll(course);
         }
 
         public void RemoveStudent(Student student, Course course)
         {
             if (course == null || student == null) throw new ArgumentNullException("Студент або курс не існують.");
             course.ExcludeStudent(student);
+            student.Unenroll(course);
         }
 
         public Lesson CreateLesson(Course course, string title, string text)
         {
             var lesson = new Lesson { Title = title, TheoryContent = text, Course = course, IsPublic = true };
-            course.Lessons.Add(lesson);
+            course.AddLesson(lesson);
             return lesson;
         }
 
-        public void EditLesson(Lesson lesson, string title, string text, bool isPublic, List<Student> allowedStudents)
+        public void EditLesson(Lesson lesson, string title, string text, bool isPublic, List<FileModel> files)
         {
-            lesson.Title = title;
-            lesson.TheoryContent = text;
-            lesson.IsPublic = isPublic;
+            if (lesson == null) throw new ArgumentNullException(nameof(lesson));
 
-            lesson.AllowedStudents.Clear();
-            if (!isPublic && allowedStudents != null)
-            {
-                lesson.AllowedStudents.AddRange(allowedStudents);
-            }
+            lesson.UpdateContent(title, text ?? string.Empty, isPublic, files);
         }
 
         public void DeleteLesson(Course course, Lesson lesson)
         {
-            course.Lessons.Remove(lesson);
+            course.RemoveLesson(lesson);
         }
 
         public Task CreateTask(Lesson lesson, string title, string theory, int maxPoints, DateTime? deadline, List<FileModel> files)
@@ -167,6 +164,7 @@ namespace Platform.Models
                 throw new ArgumentException("Об'єкт доступу має бути Уроком або Завданням.");
             }
         }
+
         public void DeleteCourse(Course course)
         {
             if (course == null) throw new ArgumentNullException(nameof(course));
