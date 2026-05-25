@@ -104,20 +104,28 @@ namespace Platform.Models
         public List<TaskStatusDTO> GetTaskAnalytics(Course course)
         {
             var analytics = new List<TaskStatusDTO>();
-
             var allTasks = course.Lessons.SelectMany(l => l.Tasks);
 
             foreach (var task in allTasks)
             {
                 var response = task.Responses.FirstOrDefault(r => r.Author.Id == this.Id);
-
                 string statusText = "Ще не здано";
+
+                bool isDeadlinePassed = task.Deadline.HasValue && DateTime.Now > task.Deadline.Value;
+
                 if (response != null)
                 {
                     if (response.FinalGrade != null)
                         statusText = $"Оцінено ({response.FinalGrade.Value})";
+                    else if (task.Deadline.HasValue && response.SubmissionDate > task.Deadline.Value)
+                        statusText = "Здано із запізненням";
                     else
                         statusText = "На перевірці";
+                }
+                else
+                {
+                    if (isDeadlinePassed)
+                        statusText = "Прострочено";
                 }
 
                 analytics.Add(new TaskStatusDTO

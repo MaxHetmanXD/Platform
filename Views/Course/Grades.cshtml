@@ -144,7 +144,13 @@
                                                 <small class="text-danger mt-1 ms-4"><i class="bi bi-clock-history"></i> @(task.Deadline?.ToString("dd.MM.yyyy HH:mm") ?? "Без дедлайну")</small>
                                             </div>
                                             <div class="w-25 text-center">
-                                                <span class="badge bg-secondary">@task.Status</span>
+                                                @{
+                                                    string badgeClass = "bg-secondary";
+                                                    if (task.Status == "Прострочено" || task.Status == "Здано із запізненням") { badgeClass = "bg-danger"; }
+                                                    else if (task.Status.StartsWith("Оцінено")) { badgeClass = "bg-success"; }
+                                                    else if (task.Status == "На перевірці") { badgeClass = "bg-warning text-dark"; }
+                                                }
+                                                <span class="badge @badgeClass">@task.Status</span>
                                             </div>
                                             <div class="w-25 text-end">
                                                 <span class="fw-bold fs-6 text-muted">
@@ -161,7 +167,13 @@
                                                 <small class="text-danger mt-1 ms-4"><i class="bi bi-clock-history"></i> @(task.Deadline?.ToString("dd.MM.yyyy HH:mm") ?? "Без дедлайну")</small>
                                             </div>
                                             <div class="w-25 text-center">
-                                                <span class="badge bg-secondary">@task.Status</span>
+                                                @{
+                                                    string badgeClass = "bg-secondary";
+                                                    if (task.Status == "Прострочено" || task.Status == "Здано із запізненням") { badgeClass = "bg-danger"; }
+                                                    else if (task.Status.StartsWith("Оцінено")) { badgeClass = "bg-success"; }
+                                                    else if (task.Status == "На перевірці") { badgeClass = "bg-warning text-dark"; }
+                                                }
+                                                <span class="badge @badgeClass">@task.Status</span>
                                             </div>
                                             <div class="w-25 text-end">
                                                 <span class="fw-bold fs-6 @(task.GradeValue != null ? "text-success" : "text-muted")">
