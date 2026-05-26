@@ -213,6 +213,16 @@ namespace Platform.Controllers
                 {
                     if (isAdmin)
                     {
+                        if (!string.IsNullOrWhiteSpace(login) && login.ToLower() != targetUser.Login.ToLower())
+                        {
+                            bool loginExists = await _context.Users.AnyAsync(u => u.Login.ToLower() == login.ToLower());
+                            if (loginExists)
+                            {
+                                TempData["Error"] = "Помилка: Користувач із таким логіном вже існує в системі! Оберіть інший.";
+                                return RedirectToAction("Profile", new { id = userId });
+                            }
+                        }
+
                         var currentAdmin = await _context.Users.OfType<Admin>().FirstOrDefaultAsync(a => a.Id == currentUserId);
 
                         currentAdmin?.EditUserFields(targetUser, login ?? targetUser.Login, null, nickname, email, newAvatar, info, specialValue);
