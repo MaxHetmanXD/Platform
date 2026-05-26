@@ -172,6 +172,16 @@ namespace Platform.Controllers
             FileModel? newBanner = course.Banner;
             if (bannerFile != null && currentUser != null)
             {
+                string[] allowedImageExtensions = { ".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp" };
+
+                var tempFileModel = new FileModel(bannerFile.FileName, bannerFile.Length, currentUser);
+
+                if (!tempFileModel.Validate(_fileManager.MaxFileSize, allowedImageExtensions))
+                {
+                    TempData["Error"] = "Помилка: для банера курсу можна завантажувати лише зображення (.jpg, .png, .gif, .webp)!";
+                    return RedirectToAction("Manage", new { id = model.Id });
+                }
+
                 newBanner = await _fileManager.SaveFileAsync(bannerFile, currentUser);
                 if (newBanner != null) _context.Files.Add(newBanner);
             }
@@ -769,15 +779,7 @@ namespace Platform.Controllers
                             Deadline = task.Deadline
                         };
 
-                        var analyticsItem = basicAnalytics?.FirstOrDefault(a => a.TaskTitle == task.Title);
-                        if (analyticsItem != null)
-                        {
-                            taskVm.Status = analyticsItem.Status;
-                        }
-                        else
-                        {
-                            taskVm.Status = task.GetTaskStatus(student);
-                        }
+                        taskVm.Status = task.GetTaskStatus(student);
 
                         var grade = task.GetStudentGrade(student);
 
@@ -1031,25 +1033,24 @@ namespace Platform.Controllers
 
             if (studentId.HasValue)
             {
+                var targetStudent = await _context.Users.OfType<Student>().FirstOrDefaultAsync(s => s.Id == studentId.Value);
                 var response = task.Responses.FirstOrDefault(r => r.Author.Id == studentId.Value);
-                if (response == null)
+
+                if (targetStudent != null)
                 {
-                    var targetStudent = await _context.Users.OfType<Student>().FirstOrDefaultAsync(s => s.Id == studentId.Value);
-                    if (targetStudent != null)
-                    {
-                        response = new StudentResponse(targetStudent, task);
-                        _context.Responses.Add(response);
-                        await _context.SaveChangesAsync();
-                    }
+                    vm.ResponseStudentId = targetStudent.Id;
+                    vm.ResponseStudentNickname = targetStudent.Nickname;
                 }
 
                 if (response != null)
                 {
-                    vm.ResponseStudentId = response.Author.Id;
-                    vm.ResponseStudentNickname = response.Author.Nickname;
                     vm.ResponseStatus = response.Status.ToString();
                     vm.CurrentGrade = response.FinalGrade?.Value;
                     vm.ResponseFiles = response.AttachedFiles.Select(f => new FileItemViewModel { Id = f.Id, FileName = f.FileName, ReadableSize = f.GetReadableSize() }).ToList();
+                }
+                else
+                {
+                    vm.ResponseStatus = string.Empty;
                 }
             }
 
@@ -1080,7 +1081,11 @@ namespace Platform.Controllers
                 .Include(r => r.Author)
                 .FirstOrDefaultAsync(r => r.TargetTask.Id == taskId && r.Author.Id == userId);
 
-            if (response == null) return NotFound("Відповідь не знайдена.");
+            if (response == null)
+            {
+                TempData["Error"] = "Спочатку завантажте файл відповіді!";
+                return RedirectToAction("TaskDetails", new { id = taskId });
+            }
 
             var student = response.Author as Student;
             if (student == null) return BadRequest("Користувач не є студентом.");
@@ -1215,13 +1220,19 @@ namespace Platform.Controllers
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             Guid.TryParse(userIdStr, out Guid userId);
 
+            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+
             var response = await _context.Responses
                 .Include(r => r.TargetTask)
                 .Include(r => r.AttachedFiles)
                 .FirstOrDefaultAsync(r => r.TargetTask.Id == taskId && r.Author.Id == userId);
 
-            if (response == null) return NotFound();
-            var currentUser = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            if (response == null)
+            {
+                var targetTask = await _context.Tasks.FirstOrDefaultAsync(t => t.Id == taskId);
+                response = new StudentResponse((Student)currentUser!, targetTask!);
+                _context.Responses.Add(response);
+            }
 
             var tempFileModel = new FileModel(file.FileName, file.Length, currentUser!);
             string[] allowedExtensions = { ".pdf", ".docx", ".doc", ".xls", ".xlsx", ".ppt", ".pptx", ".zip", ".rar", ".png", ".jpg", ".txt" };

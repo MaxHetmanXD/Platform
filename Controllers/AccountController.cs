@@ -213,9 +213,9 @@ namespace Platform.Controllers
                 {
                     if (isAdmin)
                     {
-                        var currentAdmin = await _context.Users.OfType<Admin>().FirstOrDefaultAsync(a => a.Id == userId);
+                        var currentAdmin = await _context.Users.OfType<Admin>().FirstOrDefaultAsync(a => a.Id == currentUserId);
 
-                        currentAdmin?.EditUserFields(targetUser, targetUser.Login, null, nickname, email, newAvatar, info, specialValue);
+                        currentAdmin?.EditUserFields(targetUser, login ?? targetUser.Login, null, nickname, email, newAvatar, info, specialValue);
                     }
                     else
                     {

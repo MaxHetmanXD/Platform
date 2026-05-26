@@ -5,13 +5,11 @@ namespace Platform.Models.ViewModels
 {
     public class TaskDetailsViewModel
     {
-        // Навігація
         public Guid CourseId { get; set; }
         public string CourseTitle { get; set; } = string.Empty;
         public Guid LessonId { get; set; }
         public Guid TaskId { get; set; }
 
-        // Блок Завдання (Ліворуч)
         public string TaskTitle { get; set; } = string.Empty;
         public string TaskInfo { get; set; } = string.Empty;
         public int MaxPoints { get; set; }
@@ -29,7 +27,6 @@ namespace Platform.Models.ViewModels
         public double? CurrentGrade { get; set; }
         public List<FileItemViewModel> ResponseFiles { get; set; } = new();
 
-        // Модальне вікно редагування
         public List<ParticipantItemViewModel> AvailableStudentsForTask { get; set; } = new();
         public List<Guid> AllowedStudentIds { get; set; } = new();
     }

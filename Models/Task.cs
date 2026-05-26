@@ -75,6 +75,12 @@ namespace Platform.Models
             if (response != null)
             {
                 if (response.Status == SubmissionStatus.Checked) return "Оцінено";
+
+                if (Deadline.HasValue && response.SubmissionDate > Deadline.Value)
+                {
+                    return "Здано із запізненням";
+                }
+
                 if (response.Status == SubmissionStatus.Pending) return "На перевірці";
             }
 

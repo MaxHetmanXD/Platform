@@ -124,7 +124,7 @@ namespace Platform.Controllers
                 return BadRequest("Невідома роль");
             }
 
-            User newUser = currentAdmin.CreateUser(tempLogin, tempPassword, "Новий Користувач", tempEmail, parsedRole);
+            User newUser = currentAdmin.CreateUser(tempLogin, tempPassword, tempEmail, "Новий Користувач", parsedRole);
 
             _context.Users.Add(newUser);
             await _context.SaveChangesAsync();
