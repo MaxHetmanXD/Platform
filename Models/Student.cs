@@ -72,6 +72,7 @@ namespace Platform.Models
             }
 
             response.Submit();
+            OnTaskSubmitted?.Invoke(this, response);
             response.RefreshStatus();
 
             OnTaskSubmitted?.Invoke(this, response);

@@ -1094,18 +1094,16 @@ namespace Platform.Controllers
             {
                 try
                 {
+                    student.OnTaskSubmitted -= OnTaskSubmittedHandler;
+                    student.OnTaskSubmitted += OnTaskSubmittedHandler;
                     student.SubmitTask(response);
 
                     if (response.TargetTask.IsOverdue())
                     {
-                        var currentCourse = response.TargetTask.Lesson.Course;
-                        _notificationService.NotifyTeacherOfSubmission(student, response.TargetTask, currentCourse);
                         TempData["Warning"] = "Завдання відправлено, але дедлайн вже минув!";
                     }
                     else
                     {
-                        var currentCourse = response.TargetTask.Lesson.Course;
-                        _notificationService.NotifyTeacherOfSubmission(student, response.TargetTask, currentCourse);
                         TempData["Message"] = "Завдання успішно відправлено на перевірку!";
                     }
                 }
@@ -1161,6 +1159,9 @@ namespace Platform.Controllers
             {
                 try
                 {
+                    response.OnGradeApplied -= OnGradeAppliedHandler;
+                    response.OnGradeApplied += OnGradeAppliedHandler;
+
                     if (response.FinalGrade != null)
                     {
                         if (!response.FinalGrade.ValidateValue(gradeValue, response.TargetTask.MaxPoints))
@@ -1176,12 +1177,6 @@ namespace Platform.Controllers
                         teacher.GradeSubmission(response, gradeValue, "Оцінено успішно");
                         _context.Add(response.FinalGrade);
                     }
-
-                    if (response.Author is Student studentObject)
-                    {
-                        _notificationService.HandleGradeEvent(response.FinalGrade, studentObject);
-                    }
-
                     TempData["Message"] = $"Успішно збережено! {response.FinalGrade.FormatFeedback()}";
                 }
                 catch (ArgumentException ex)
@@ -1316,6 +1311,18 @@ namespace Platform.Controllers
 
             TempData["Message"] = $"Ви успішно покинули курс '{course.Title}'.";
             return RedirectToAction("MyCourses", "Home");
+        }
+        private void OnTaskSubmittedHandler(object? sender, StudentResponse resp)
+        {
+            _notificationService.NotifyTeacherOfSubmission((Student)sender!, resp.TargetTask, resp.TargetTask.Lesson.Course);
+        }
+
+        private void OnGradeAppliedHandler(object? sender, StudentResponse resp)
+        {
+            if (resp.Author is Student studentObject)
+            {
+                _notificationService.HandleGradeEvent(resp.FinalGrade, studentObject);
+            }
         }
     }
 }
